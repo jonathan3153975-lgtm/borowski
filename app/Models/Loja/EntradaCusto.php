@@ -62,6 +62,6 @@ class EntradaCusto extends Model
         );
         $statement->execute(['entrada_id' => $entradaId]);
 
-        return (int) round(((float) $statement->fetchColumn()) * 100);
+        return (int) round(((float) $statement->fetchColumn()) * 1000);
     }
 }

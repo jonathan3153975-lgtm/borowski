@@ -32,10 +32,13 @@ class User extends Model
 
         $statement = $this->db->prepare(
             'SELECT * FROM usuarios
-             WHERE nome LIKE :term OR email LIKE :term
+             WHERE nome LIKE :term_nome OR email LIKE :term_email
              ORDER BY nome ASC'
         );
-        $statement->execute(['term' => '%' . $term . '%']);
+        $statement->execute([
+            'term_nome' => '%' . $term . '%',
+            'term_email' => '%' . $term . '%',
+        ]);
 
         return $statement->fetchAll();
     }

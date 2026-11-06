@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 $detail = $detail ?? [];
+$opcoes = $opcoes ?? [];
+$maxItemImages = (int) config('app.uploads.loja_itens.max_images', 6);
+$maxItemImageSize = (int) config('app.uploads.loja_itens.max_size', 5242880);
 $entrada = $detail['entrada'] ?? [];
 $custos = $detail['custos'] ?? [];
 $itens = $detail['itens'] ?? [];
@@ -29,6 +32,12 @@ $entryObservacoes = $entryOld ? old('observacoes', $entrada['observacoes'] ?? ''
 $custoDescricao = $costOld ? old('custo_descricao', '') : '';
 $custoValor = $costOld ? old('custo_valor', '') : '';
 
+$addCategoriaId = $itemAddOld ? (int) old('categoria_id', 0) : 0;
+$addMarcaId = $itemAddOld ? (int) old('marca_id', 0) : 0;
+$addFabricanteId = $itemAddOld ? (int) old('fabricante_id', 0) : 0;
+$addColecaoId = $itemAddOld ? (int) old('colecao_id', 0) : 0;
+$addEscalaId = $itemAddOld ? (int) old('escala_id', 0) : 0;
+$addAnoFabricacao = $itemAddOld ? old('ano_fabricacao', '') : '';
 $addNome = $itemAddOld ? old('nome', '') : '';
 $addCodigo = $itemAddOld ? old('codigo', '') : '';
 $addQuantidade = $itemAddOld ? old('quantidade', '1') : '1';
@@ -39,6 +48,20 @@ $addFornecedor = $itemAddOld ? old('fornecedor', '') : '';
 $addUrl = $itemAddOld ? old('url', '') : '';
 $addPreco = $itemAddOld ? old('preco_custo', '') : '';
 $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
+
+$renderConfigOptions = static function (array $items, int $selected): void {
+    foreach ($items as $item) {
+        $nome = (string) $item['nome'];
+
+        if (($item['status'] ?? 'ativo') === 'inativo') {
+            $nome .= ' (inativo)';
+        }
+
+        echo '<option value="' . (int) $item['id'] . '"'
+            . ((int) $item['id'] === $selected ? ' selected' : '')
+            . '>' . e($nome) . '</option>';
+    }
+};
 ?>
 <?php require __DIR__ . '/../partials/tabs.php'; ?>
 
@@ -267,7 +290,8 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                         name="custo_valor"
                         value="<?= e((string) $custoValor) ?>"
                         inputmode="decimal"
-                        placeholder="0,00"
+                        placeholder="0,000"
+                        data-money
                         required
                     >
                 </div>
@@ -330,15 +354,105 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                     : 'Itens disponibilizados para pré-venda com seus fornecedores.' ?>
             </p>
         </div>
-        <span class="badge-soft"><?= count($itens) ?> item(ns)</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge-soft"><?= count($itens) ?> item(ns)</span>
+            <button
+                type="button"
+                class="btn btn-brand loja-entry-add-item"
+                data-bs-toggle="modal"
+                data-bs-target="#addItemModal"
+                aria-label="Adicionar item"
+            >
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                Adicionar item
+            </button>
+        </div>
     </div>
 
     <div class="loja-section-body">
-        <form method="post" action="<?= e(url('/admin/loja/entradas/' . $entryId . '/itens')) ?>" class="loja-item-form">
-            <?= csrf_field() ?>
-            <input type="hidden" name="form_context" value="item_add">
+        <div
+            class="modal fade"
+            id="addItemModal"
+            tabindex="-1"
+            aria-labelledby="addItemModalLabel"
+            aria-hidden="true"
+            data-auto-open="<?= $itemAddOld ? '1' : '0' ?>"
+        >
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <form
+                        method="post"
+                        action="<?= e(url('/admin/loja/entradas/' . $entryId . '/itens')) ?>"
+                        class="loja-item-modal-form"
+                        enctype="multipart/form-data"
+                    >
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="form_context" value="item_add">
 
-            <div class="row g-3">
+                        <div class="modal-header">
+                            <div>
+                                <h3 class="modal-title h5" id="addItemModalLabel">Adicionar item</h3>
+                                <p class="modal-subtitle mb-0">
+                                    Cadastre a mercadoria, os custos e as fotos do item.
+                                </p>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+
+                        <div class="modal-body" style="max-height: 75vh;">
+                            <div class="row g-3">
+                <div class="col-12">
+                    <div class="loja-form-divider"><span>Catálogo do item</span></div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label for="add_categoria" class="form-label">Categoria</label>
+                    <select class="form-select" id="add_categoria" name="categoria_id">
+                        <option value="">Não informada</option>
+                        <?php $renderConfigOptions($opcoes['categorias'] ?? [], $addCategoriaId); ?>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="add_marca" class="form-label">Marca</label>
+                    <select class="form-select" id="add_marca" name="marca_id">
+                        <option value="">Não informada</option>
+                        <?php $renderConfigOptions($opcoes['marcas'] ?? [], $addMarcaId); ?>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="add_fabricante" class="form-label">Fabricante</label>
+                    <select class="form-select" id="add_fabricante" name="fabricante_id">
+                        <option value="">Não informado</option>
+                        <?php $renderConfigOptions($opcoes['fabricantes'] ?? [], $addFabricanteId); ?>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="add_colecao" class="form-label">Coleção</label>
+                    <select class="form-select" id="add_colecao" name="colecao_id">
+                        <option value="">Não informada</option>
+                        <?php $renderConfigOptions($opcoes['colecoes'] ?? [], $addColecaoId); ?>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="add_escala" class="form-label">Escala</label>
+                    <select class="form-select" id="add_escala" name="escala_id">
+                        <option value="">Não informada</option>
+                        <?php $renderConfigOptions($opcoes['escalas'] ?? [], $addEscalaId); ?>
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="add_ano_fabricacao" class="form-label">Ano de fabricação</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="add_ano_fabricacao"
+                        name="ano_fabricacao"
+                        value="<?= e((string) $addAnoFabricacao) ?>"
+                        min="1900"
+                        max="2100"
+                    >
+                </div>
+
                 <div class="col-12 col-md-5">
                     <label for="add_nome" class="form-label">Nome do item</label>
                     <input
@@ -387,7 +501,8 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                             name="custo_unitario_base"
                             value="<?= e((string) $addBase) ?>"
                             inputmode="decimal"
-                            placeholder="0,00"
+                            placeholder="0,000"
+                            data-money
                             required
                         >
                     </div>
@@ -458,7 +573,8 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                             name="preco_custo"
                             value="<?= e((string) $addPreco) ?>"
                             inputmode="decimal"
-                            placeholder="0,00"
+                            placeholder="0,000"
+                            data-money
                             required
                         >
                     </div>
@@ -475,20 +591,48 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                     </div>
                 <?php endif; ?>
 
-                <div class="col-12">
-                    <button type="submit" class="btn btn-brand">
-                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        Adicionar item
-                    </button>
+                            <div class="col-12">
+                                <div class="loja-form-divider"><span>Fotos do item</span></div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="add_imagens" class="form-label">Fotos do item (opcional)</label>
+                                <input
+                                    type="file"
+                                    class="form-control"
+                                    id="add_imagens"
+                                    name="imagens[]"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    data-image-preview="itemImagePreview"
+                                >
+                                <div class="form-text">
+                                    Até <?= $maxItemImages ?> fotos, nos formatos JPG, PNG ou WebP, com no máximo
+                                    <?= e(number_format($maxItemImageSize / 1048576, 1, ',', '.')) ?> MB cada.
+                                    As fotos precisam ser selecionadas novamente se houver erro no cadastro.
+                                </div>
+                                <div class="image-preview-grid" id="itemImagePreview" aria-live="polite"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-brand">
+                                <i class="bi bi-check-lg" aria-hidden="true"></i>
+                                Salvar item
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </form>
+        </div>
 
         <?php if ($itens === []): ?>
             <div class="empty-state loja-items-empty">
                 <i class="bi bi-box" aria-hidden="true"></i>
                 <p class="mb-1">Nenhum item cadastrado.</p>
-                <span>Use o formulário acima para incluir a primeira mercadoria.</span>
+                <span>Use o botão "Adicionar item" para incluir a primeira mercadoria.</span>
             </div>
         <?php elseif ($isDireta): ?>
             <div class="table-responsive">
@@ -510,10 +654,39 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                             <?php $itemId = (int) $item['id']; ?>
                             <tr>
                                 <td>
-                                    <strong class="d-block"><?= e((string) $item['nome']) ?></strong>
-                                    <?php if (!empty($item['codigo'])): ?>
-                                        <span class="small text-muted">Código: <?= e((string) $item['codigo']) ?></span>
-                                    <?php endif; ?>
+                                    <div class="loja-item-cell">
+                                        <span class="loja-item-thumb">
+                                            <?php if (!empty($item['imagem_id'])): ?>
+                                                <img
+                                                    src="<?= e((string) item_imagem_url((int) $item['imagem_id'])) ?>"
+                                                    alt="<?= e((string) $item['nome']) ?>"
+                                                    loading="lazy"
+                                                >
+                                            <?php else: ?>
+                                                <i class="bi bi-image" aria-hidden="true"></i>
+                                            <?php endif; ?>
+                                        </span>
+                                        <div class="loja-item-cell-info">
+                                            <strong class="d-block"><?= e((string) $item['nome']) ?></strong>
+                                            <?php if (!empty($item['codigo'])): ?>
+                                                <span class="small text-muted">Código: <?= e((string) $item['codigo']) ?></span>
+                                            <?php endif; ?>
+                                            <?php
+                                            $itemMeta = array_filter([
+                                                $item['categoria_nome'] ?? null,
+                                                $item['marca_nome'] ?? null,
+                                                $item['escala_nome'] ?? null,
+                                                !empty($item['ano_fabricacao']) ? 'Ano ' . $item['ano_fabricacao'] : null,
+                                            ]);
+                                            ?>
+                                            <?php if ($itemMeta !== []): ?>
+                                                <span class="small text-muted d-block"><?= e(implode(' · ', $itemMeta)) ?></span>
+                                            <?php endif; ?>
+                                            <?php if ((int) ($item['imagens_count'] ?? 0) > 0): ?>
+                                                <span class="small text-muted d-block"><?= (int) $item['imagens_count'] ?> foto(s)</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td><?= (int) $item['quantidade'] ?></td>
                                 <td><?= e(format_money($item['custo_unitario_base'])) ?></td>
@@ -575,15 +748,42 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                     ?>
                     <article class="loja-item-card">
                         <header class="loja-item-card-head">
-                            <div>
-                                <h3 class="loja-item-title"><?= e((string) $item['nome']) ?></h3>
-                                <p class="loja-item-meta mb-0">
-                                    <?php if (!empty($item['codigo'])): ?>
-                                        Código: <?= e((string) $item['codigo']) ?> ·
+                            <div class="loja-item-card-main">
+                                <span class="loja-item-thumb">
+                                    <?php if (!empty($item['imagem_id'])): ?>
+                                        <img
+                                            src="<?= e((string) item_imagem_url((int) $item['imagem_id'])) ?>"
+                                            alt="<?= e((string) $item['nome']) ?>"
+                                            loading="lazy"
+                                        >
+                                    <?php else: ?>
+                                        <i class="bi bi-image" aria-hidden="true"></i>
                                     <?php endif; ?>
-                                    Quantidade: <?= (int) $item['quantidade'] ?> ·
-                                    <?= count($ofertas) ?> oferta(s)
-                                </p>
+                                </span>
+                                <div>
+                                    <h3 class="loja-item-title"><?= e((string) $item['nome']) ?></h3>
+                                    <p class="loja-item-meta mb-0">
+                                        <?php if (!empty($item['codigo'])): ?>
+                                            Código: <?= e((string) $item['codigo']) ?> ·
+                                        <?php endif; ?>
+                                        Quantidade: <?= (int) $item['quantidade'] ?> ·
+                                        <?= count($ofertas) ?> oferta(s)
+                                        <?php if ((int) ($item['imagens_count'] ?? 0) > 0): ?>
+                                            · <?= (int) $item['imagens_count'] ?> foto(s)
+                                        <?php endif; ?>
+                                    </p>
+                                    <?php
+                                    $itemMeta = array_filter([
+                                        $item['categoria_nome'] ?? null,
+                                        $item['marca_nome'] ?? null,
+                                        $item['escala_nome'] ?? null,
+                                        !empty($item['ano_fabricacao']) ? 'Ano ' . $item['ano_fabricacao'] : null,
+                                    ]);
+                                    ?>
+                                    <?php if ($itemMeta !== []): ?>
+                                        <p class="loja-item-meta mb-0"><?= e(implode(' · ', $itemMeta)) ?></p>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <div class="loja-item-cost">
                                 <span class="status-pill status-pill-pre">Em pré-venda</span>
@@ -712,7 +912,8 @@ $addOfertaObservacoes = $itemAddOld ? old('oferta_observacoes', '') : '';
                                     name="preco_custo"
                                     value="<?= e((string) $ofPreco) ?>"
                                     inputmode="decimal"
-                                    placeholder="0,00"
+                                    placeholder="0,000"
+                                    data-money
                                     required
                                 >
                             </div>

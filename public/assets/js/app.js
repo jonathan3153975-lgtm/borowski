@@ -69,6 +69,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.querySelectorAll('[data-image-preview]').forEach((input) => {
+        input.addEventListener('change', () => {
+            const target = document.getElementById(input.dataset.imagePreview || '');
+
+            if (!target) {
+                return;
+            }
+
+            (input._previewUrls || []).forEach((url) => URL.revokeObjectURL(url));
+
+            const urls = [];
+            target.innerHTML = '';
+
+            Array.prototype.forEach.call(input.files || [], (file) => {
+                if (!file.type || file.type.indexOf('image/') !== 0) {
+                    return;
+                }
+
+                const url = URL.createObjectURL(file);
+                urls.push(url);
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-preview-item';
+                const image = document.createElement('img');
+                image.src = url;
+                image.alt = file.name;
+                wrapper.appendChild(image);
+                target.appendChild(wrapper);
+            });
+
+            input._previewUrls = urls;
+        });
+    });
+
     if (typeof bootstrap !== 'undefined') {
         window.setTimeout(() => {
             document.querySelectorAll('.alert-dismissible').forEach((alert) => {

@@ -55,6 +55,8 @@ Variáveis principais:
 | `SESSION_NAME` | Nome do cookie de sessão | `loja_carrinhos_session` |
 | `SESSION_SECURE_COOKIE` | Exige HTTPS no cookie | `false` em local |
 | `INSTALL_KEY` | Chave reservada para instalação protegida | aleatória e longa |
+| `ITEM_IMAGE_MAX_SIZE` | Tamanho máximo por foto de item, em bytes | `5242880` (5 MB) |
+| `ITEM_IMAGE_MAX_IMAGES` | Máximo de fotos por item | `6` |
 
 Regras:
 
@@ -97,14 +99,31 @@ Depois, execute a migration com esse usuário:
 php scripts/migrate.php
 ```
 
-As migrations usam `CREATE TABLE IF NOT EXISTS` e podem ser executadas novamente para as tabelas existentes. O runner aplica todos os arquivos `database/migrations/*.sql` em ordem.
+O runner mantém a tabela `schema_migrations` e aplica apenas os arquivos ainda não registrados. Todos os arquivos `database/migrations/*.sql` são lidos em ordem.
 
 Migrations atuais:
 
 - `001_create_initial_tables.sql` — `usuarios` e `logs_auditoria`.
 - `002_create_loja_tables.sql` — `loja_entradas`, `loja_entrada_custos`, `loja_itens` e `loja_item_fornecedores`.
+- `003_alter_money_precision.sql` — colunas monetárias em `DECIMAL(12,3)`.
+- `004_create_produtos_tables.sql` — categorias, marcas, fabricantes, coleções, escalas, produtos e imagens.
+- `005_add_produto_id_to_loja_itens.sql` — vínculo entre itens de estoque e produtos.
+- `006_create_loja_item_imagens.sql` — fotos dos itens de entrada/estoque.
+- `007_add_catalogo_to_loja_itens.sql` — categoria, marca, fabricante, coleção, escala e ano nos itens.
 
 Alterações futuras devem ser feitas em novas migrations. Detalhes completos em [03-BANCO-DE-DADOS.md](03-BANCO-DE-DADOS.md).
+
+### Uploads de fotos de itens
+
+As fotos ficam em:
+
+```text
+storage/uploads/loja_itens/
+```
+
+Garanta que o diretório exista e tenha permissão de escrita para o processo PHP. Ele **não** deve ser exposto diretamente pelo servidor web. As fotos de itens são servidas pela rota autenticada `/admin/loja/itens/imagem/{id}`.
+
+Se o diretório não existir, o service de imagem tenta criá-lo. Em produção, prefira criar previamente com permissões restritas.
 
 ## 4. Primeiro super-administrador
 
@@ -195,6 +214,9 @@ Checklist mínimo:
 - `INSTALL_KEY` removida ou substituída após a instalação
 - Backup do banco e dos logs
 - `storage/logs/` com permissão de escrita apenas para o processo PHP
+- `storage/uploads/loja_itens/` com permissão de escrita apenas para o processo PHP
+- `storage/uploads/` fora do document root e sem execução de arquivos
+- `ITEM_IMAGE_MAX_SIZE` e `ITEM_IMAGE_MAX_IMAGES` revisados
 
 ## 9. Erros comuns
 

@@ -8,9 +8,9 @@ use InvalidArgumentException;
 
 class CalculoService
 {
-    public const MAX_MONEY_CENTS = 999999999;
+    public const MAX_MONEY_MILESIMOS = 999999999999;
 
-    public function paraCentavos(mixed $valor): int
+    public function paraMilesimos(mixed $valor): int
     {
         $texto = trim((string) $valor);
 
@@ -29,26 +29,26 @@ class CalculoService
             $texto = str_replace(',', '.', $texto);
         }
 
-        if (preg_match('/^\d+(\.\d{1,2})?$/', $texto) !== 1) {
+        if (preg_match('/^\d+(\.\d{1,3})?$/', $texto) !== 1) {
             throw new InvalidArgumentException('Valor monetário inválido.');
         }
 
         [$inteiro, $decimal] = array_pad(explode('.', $texto, 2), 2, '');
-        $decimal = str_pad(substr($decimal, 0, 2), 2, '0');
+        $decimal = str_pad(substr($decimal, 0, 3), 3, '0');
 
-        $cents = ((int) $inteiro) * 100 + (int) $decimal;
+        $milesimos = ((int) $inteiro) * 1000 + (int) $decimal;
 
-        return $negative ? -$cents : $cents;
+        return $negative ? -$milesimos : $milesimos;
     }
 
-    public function centavosParaDecimal(int $cents): string
+    public function milesimosParaDecimal(int $milesimos): string
     {
-        $negative = $cents < 0;
-        $cents = abs($cents);
+        $negative = $milesimos < 0;
+        $milesimos = abs($milesimos);
 
-        $value = intdiv($cents, 100) . '.' . str_pad(
-            (string) ($cents % 100),
-            2,
+        $value = intdiv($milesimos, 1000) . '.' . str_pad(
+            (string) ($milesimos % 1000),
+            3,
             '0',
             STR_PAD_LEFT
         );
@@ -56,16 +56,16 @@ class CalculoService
         return ($negative ? '-' : '') . $value;
     }
 
-    public function calcularRateio(int $totalAdicionaisCentavos, array $itens): array
+    public function calcularRateio(int $totalAdicionaisMilesimos, array $itens): array
     {
-        $totalAdicionaisCentavos = max(0, $totalAdicionaisCentavos);
+        $totalAdicionaisMilesimos = max(0, $totalAdicionaisMilesimos);
 
         $preparados = [];
 
         foreach ($itens as $item) {
             $id = (int) $item['id'];
             $quantidade = max(1, (int) $item['quantidade']);
-            $base = max(0, $this->paraCentavos($item['custo_unitario_base'] ?? 0));
+            $base = max(0, $this->paraMilesimos($item['custo_unitario_base'] ?? 0));
             $subtotal = $base * $quantidade;
 
             $preparados[] = [
@@ -87,7 +87,7 @@ class CalculoService
         if ($totalSubtotal > 0) {
             foreach ($preparados as $preparado) {
                 $parcelas[$preparado['id']] = $this->mulDiv(
-                    $totalAdicionaisCentavos,
+                    $totalAdicionaisMilesimos,
                     $preparado['subtotal'],
                     $totalSubtotal
                 );
@@ -99,7 +99,7 @@ class CalculoService
         } else {
             foreach ($preparados as $preparado) {
                 $parcelas[$preparado['id']] = $this->mulDiv(
-                    $totalAdicionaisCentavos,
+                    $totalAdicionaisMilesimos,
                     $preparado['quantidade'],
                     $totalQuantidade
                 );
@@ -110,7 +110,7 @@ class CalculoService
                 ($b['quantidade'] <=> $a['quantidade']) ?: ($a['id'] <=> $b['id']));
         }
 
-        $residuo = $totalAdicionaisCentavos - array_sum($parcelas);
+        $residuo = $totalAdicionaisMilesimos - array_sum($parcelas);
         $indice = 0;
         $quantidadeItens = count($ordenados);
 
@@ -129,30 +129,30 @@ class CalculoService
 
             $resultado[$preparado['id']] = [
                 'quantidade' => $preparado['quantidade'],
-                'custo_unitario_base' => $this->centavosParaDecimal($preparado['base']),
-                'custo_adicional_rateado' => $this->centavosParaDecimal($parcela),
-                'custo_total_real' => $this->centavosParaDecimal($totalReal),
-                'custo_unitario_real' => $this->centavosParaDecimal($unitarioReal),
-                'subtotal_base_centavos' => $preparado['subtotal'],
-                'rateado_centavos' => $parcela,
-                'total_real_centavos' => $totalReal,
+                'custo_unitario_base' => $this->milesimosParaDecimal($preparado['base']),
+                'custo_adicional_rateado' => $this->milesimosParaDecimal($parcela),
+                'custo_total_real' => $this->milesimosParaDecimal($totalReal),
+                'custo_unitario_real' => $this->milesimosParaDecimal($unitarioReal),
+                'subtotal_base_milesimos' => $preparado['subtotal'],
+                'rateado_milesimos' => $parcela,
+                'total_real_milesimos' => $totalReal,
             ];
         }
 
         return $resultado;
     }
 
-    public function calcularItemPrevisao(int $quantidade, int $baseCentavos): array
+    public function calcularItemPrevisao(int $quantidade, int $baseMilesimos): array
     {
         $quantidade = max(1, $quantidade);
-        $baseCentavos = max(0, $baseCentavos);
+        $baseMilesimos = max(0, $baseMilesimos);
 
         return [
             'quantidade' => $quantidade,
-            'custo_unitario_base' => $this->centavosParaDecimal($baseCentavos),
-            'custo_adicional_rateado' => '0.00',
-            'custo_total_real' => $this->centavosParaDecimal($baseCentavos * $quantidade),
-            'custo_unitario_real' => $this->centavosParaDecimal($baseCentavos),
+            'custo_unitario_base' => $this->milesimosParaDecimal($baseMilesimos),
+            'custo_adicional_rateado' => '0.000',
+            'custo_total_real' => $this->milesimosParaDecimal($baseMilesimos * $quantidade),
+            'custo_unitario_real' => $this->milesimosParaDecimal($baseMilesimos),
         ];
     }
 

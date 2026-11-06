@@ -15,4 +15,15 @@ return [
     ],
 
     'install_key' => env('INSTALL_KEY', ''),
+
+    'uploads' => [
+        'base_path' => BASE_PATH . '/storage/uploads',
+        'loja_itens' => [
+            'path' => BASE_PATH . '/storage/uploads/loja_itens',
+            'max_size' => (int) env('ITEM_IMAGE_MAX_SIZE', 5242880),
+            'max_images' => (int) env('ITEM_IMAGE_MAX_IMAGES', 6),
+            'allowed_mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+            'allowed_extensions' => ['jpg', 'jpeg', 'png', 'webp'],
+        ],
+    ],
 ];

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $activeTab = $activeTab ?? 'entradas';
 ?>
-<nav class="loja-tabs" aria-label="Seções do módulo Loja">
+<nav class="loja-tabs loja-hide-on-compact" aria-label="Seções do módulo Loja">
     <ul class="nav nav-pills">
         <li class="nav-item">
             <a

@@ -9,6 +9,8 @@ use App\Models\Loja\Entrada;
 use App\Models\Loja\EntradaCusto;
 use App\Models\Loja\ItemEstoque;
 use App\Models\Loja\ItemFornecedor;
+use App\Models\Configuracao;
+use App\Models\Loja\ItemImagem;
 use App\Services\AuditService;
 use InvalidArgumentException;
 use Throwable;
@@ -18,10 +20,21 @@ class EntradaService
     public const PER_PAGE = 20;
     public const MAX_QUANTITY = 999999;
 
+    private const AUX_ITENS = [
+        'categoria_id' => ['table' => 'categorias', 'label' => 'Categoria'],
+        'marca_id' => ['table' => 'marcas', 'label' => 'Marca'],
+        'fabricante_id' => ['table' => 'fabricantes', 'label' => 'Fabricante'],
+        'colecao_id' => ['table' => 'colecoes', 'label' => 'Coleção'],
+        'escala_id' => ['table' => 'escalas', 'label' => 'Escala'],
+    ];
+
     private Entrada $entradas;
     private EntradaCusto $custos;
     private ItemEstoque $itens;
     private ItemFornecedor $ofertas;
+    private ItemImagem $itemImagens;
+    private ItemImagemService $itemImagemService;
+    private Configuracao $configuracoes;
     private CalculoService $calculo;
     private AuditService $audit;
 
@@ -31,6 +44,9 @@ class EntradaService
         $this->custos = new EntradaCusto();
         $this->itens = new ItemEstoque();
         $this->ofertas = new ItemFornecedor();
+        $this->itemImagens = new ItemImagem();
+        $this->itemImagemService = new ItemImagemService();
+        $this->configuracoes = new Configuracao();
         $this->calculo = new CalculoService();
         $this->audit = new AuditService();
     }
@@ -179,7 +195,9 @@ class EntradaService
     public function excluir(int $id, array $actor): void
     {
         $entrada = $this->find($id);
+        $imagens = $this->itemImagens->listByEntrada($id);
         $this->entradas->delete($id);
+        $this->itemImagemService->deletarArquivos($imagens);
 
         $this->audit->log(
             'loja_entrada_excluida',
@@ -197,17 +215,17 @@ class EntradaService
         }
 
         $descricao = $this->validarTexto($data['custo_descricao'] ?? '', 2, 150, 'Descrição do custo');
-        $valorCentavos = $this->validarMoeda($data['custo_valor'] ?? '', 'Valor do custo');
+        $valorMilesimos = $this->validarMoeda($data['custo_valor'] ?? '', 'Valor do custo');
 
-        if ($valorCentavos <= 0) {
+        if ($valorMilesimos <= 0) {
             throw new InvalidArgumentException('O valor do custo deve ser maior que zero.');
         }
 
-        $custoId = $this->transaction(function () use ($entradaId, $descricao, $valorCentavos): int {
+        $custoId = $this->transaction(function () use ($entradaId, $descricao, $valorMilesimos): int {
             $id = $this->custos->create(
                 $entradaId,
                 $descricao,
-                $this->calculo->centavosParaDecimal($valorCentavos)
+                $this->calculo->milesimosParaDecimal($valorMilesimos)
             );
             $this->recalcularCustos($entradaId);
 
@@ -249,7 +267,7 @@ class EntradaService
         );
     }
 
-    public function adicionarItem(int $entradaId, array $data, array $actor): int
+    public function adicionarItem(int $entradaId, array $data, array $actor, array $files = []): int
     {
         $entrada = $this->find($entradaId);
 
@@ -258,6 +276,13 @@ class EntradaService
         $codigo = $this->validarTextoOpcional($data['codigo'] ?? '', 80, 'Código do item');
         $quantidade = $this->validarQuantidade($data['quantidade'] ?? '');
         $observacoes = $this->validarTextoOpcional($data['item_observacoes'] ?? '', 2000, 'Observações do item');
+        $categoriaId = $this->validarAuxiliarOpcional($data['categoria_id'] ?? '', 'categoria_id');
+        $marcaId = $this->validarAuxiliarOpcional($data['marca_id'] ?? '', 'marca_id');
+        $fabricanteId = $this->validarAuxiliarOpcional($data['fabricante_id'] ?? '', 'fabricante_id');
+        $colecaoId = $this->validarAuxiliarOpcional($data['colecao_id'] ?? '', 'colecao_id');
+        $escalaId = $this->validarAuxiliarOpcional($data['escala_id'] ?? '', 'escala_id');
+        $anoFabricacao = $this->validarAnoOpcional($data['ano_fabricacao'] ?? '');
+        $validatedFiles = $files === [] ? [] : $this->itemImagemService->validarUploads($files);
 
         $itemId = $this->transaction(function () use (
             $entrada,
@@ -267,18 +292,30 @@ class EntradaService
             $descricao,
             $codigo,
             $quantidade,
-            $observacoes
+            $observacoes,
+            $categoriaId,
+            $marcaId,
+            $fabricanteId,
+            $colecaoId,
+            $escalaId,
+            $anoFabricacao
         ): int {
             if ($entrada['modo'] === 'direta') {
-                $baseCentavos = $this->validarMoeda($data['custo_unitario_base'] ?? '', 'Custo unitário base');
+                $baseMilesimos = $this->validarMoeda($data['custo_unitario_base'] ?? '', 'Custo unitário base');
 
                 $id = $this->itens->create([
                     'entrada_id' => $entradaId,
+                    'categoria_id' => $categoriaId,
+                    'marca_id' => $marcaId,
+                    'fabricante_id' => $fabricanteId,
+                    'colecao_id' => $colecaoId,
+                    'escala_id' => $escalaId,
+                    'ano_fabricacao' => $anoFabricacao,
                     'nome' => $nome,
                     'descricao' => $descricao,
                     'codigo' => $codigo,
                     'quantidade' => $quantidade,
-                    'custo_unitario_base' => $this->calculo->centavosParaDecimal($baseCentavos),
+                    'custo_unitario_base' => $this->calculo->milesimosParaDecimal($baseMilesimos),
                     'status' => (int) $entrada['recebido'] === 1 ? 'disponivel' : 'em_transporte',
                     'observacoes' => $observacoes,
                 ]);
@@ -292,11 +329,17 @@ class EntradaService
 
             $id = $this->itens->create([
                 'entrada_id' => $entradaId,
+                'categoria_id' => $categoriaId,
+                'marca_id' => $marcaId,
+                'fabricante_id' => $fabricanteId,
+                'colecao_id' => $colecaoId,
+                'escala_id' => $escalaId,
+                'ano_fabricacao' => $anoFabricacao,
                 'nome' => $nome,
                 'descricao' => $descricao,
                 'codigo' => $codigo,
                 'quantidade' => $quantidade,
-                'custo_unitario_base' => '0.00',
+                'custo_unitario_base' => '0.000',
                 'status' => 'pre_venda',
                 'observacoes' => $observacoes,
             ]);
@@ -312,6 +355,16 @@ class EntradaService
 
             return $id;
         });
+
+        if ($validatedFiles !== []) {
+            try {
+                $this->itemImagemService->salvar($itemId, $validatedFiles, $actor);
+            } catch (Throwable $exception) {
+                $this->removerItemAposFalha($itemId, $entradaId, $entrada['modo']);
+
+                throw $exception;
+            }
+        }
 
         $this->audit->log(
             'loja_item_adicionado',
@@ -330,7 +383,7 @@ class EntradaService
         return $itemId;
     }
 
-    public function atualizarItem(int $itemId, array $data, array $actor): int
+    public function atualizarItem(int $itemId, array $data, array $actor, array $files = []): int
     {
         $item = $this->itens->find($itemId);
 
@@ -346,6 +399,13 @@ class EntradaService
         $codigo = $this->validarTextoOpcional($data['codigo'] ?? '', 80, 'Código do item');
         $quantidade = $this->validarQuantidade($data['quantidade'] ?? '');
         $observacoes = $this->validarTextoOpcional($data['item_observacoes'] ?? '', 2000, 'Observações do item');
+        $categoriaId = $this->validarAuxiliarOpcional($data['categoria_id'] ?? '', 'categoria_id');
+        $marcaId = $this->validarAuxiliarOpcional($data['marca_id'] ?? '', 'marca_id');
+        $fabricanteId = $this->validarAuxiliarOpcional($data['fabricante_id'] ?? '', 'fabricante_id');
+        $colecaoId = $this->validarAuxiliarOpcional($data['colecao_id'] ?? '', 'colecao_id');
+        $escalaId = $this->validarAuxiliarOpcional($data['escala_id'] ?? '', 'escala_id');
+        $anoFabricacao = $this->validarAnoOpcional($data['ano_fabricacao'] ?? '');
+        $validatedFiles = $files === [] ? [] : $this->itemImagemService->validarUploads($files);
 
         $this->transaction(function () use (
             $entrada,
@@ -356,9 +416,21 @@ class EntradaService
             $descricao,
             $codigo,
             $quantidade,
-            $observacoes
+            $observacoes,
+            $categoriaId,
+            $marcaId,
+            $fabricanteId,
+            $colecaoId,
+            $escalaId,
+            $anoFabricacao
         ): void {
             $fields = [
+                'categoria_id' => $categoriaId,
+                'marca_id' => $marcaId,
+                'fabricante_id' => $fabricanteId,
+                'colecao_id' => $colecaoId,
+                'escala_id' => $escalaId,
+                'ano_fabricacao' => $anoFabricacao,
                 'nome' => $nome,
                 'descricao' => $descricao,
                 'codigo' => $codigo,
@@ -367,8 +439,8 @@ class EntradaService
             ];
 
             if ($entrada['modo'] === 'direta') {
-                $baseCentavos = $this->validarMoeda($data['custo_unitario_base'] ?? '', 'Custo unitário base');
-                $fields['custo_unitario_base'] = $this->calculo->centavosParaDecimal($baseCentavos);
+                $baseMilesimos = $this->validarMoeda($data['custo_unitario_base'] ?? '', 'Custo unitário base');
+                $fields['custo_unitario_base'] = $this->calculo->milesimosParaDecimal($baseMilesimos);
                 $this->itens->update($itemId, $fields);
                 $this->recalcularCustos($entradaId);
 
@@ -376,13 +448,17 @@ class EntradaService
             }
 
             $ofertaSelecionada = $this->ofertas->selectedByItem($itemId);
-            $baseCentavos = $ofertaSelecionada !== null
-                ? $this->calculo->paraCentavos($ofertaSelecionada['preco_custo'])
+            $baseMilesimos = $ofertaSelecionada !== null
+                ? $this->calculo->paraMilesimos($ofertaSelecionada['preco_custo'])
                 : 0;
-            $custos = $this->calculo->calcularItemPrevisao($quantidade, $baseCentavos);
+            $custos = $this->calculo->calcularItemPrevisao($quantidade, $baseMilesimos);
 
             $this->itens->update($itemId, array_merge($fields, $custos));
         });
+
+        if ($validatedFiles !== []) {
+            $this->itemImagemService->salvar($itemId, $validatedFiles, $actor);
+        }
 
         $this->audit->log(
             'loja_item_atualizado',
@@ -403,6 +479,7 @@ class EntradaService
 
         $entradaId = (int) $item['entrada_id'];
         $entrada = $this->find($entradaId);
+        $imagens = $this->itemImagens->listByItem($itemId);
 
         $this->transaction(function () use ($entrada, $entradaId, $itemId): void {
             $this->itens->delete($itemId);
@@ -411,6 +488,8 @@ class EntradaService
                 $this->recalcularCustos($entradaId);
             }
         });
+
+        $this->itemImagemService->deletarArquivos($imagens);
 
         $this->audit->log(
             'loja_item_excluido',
@@ -450,20 +529,20 @@ class EntradaService
 
         foreach ($itens as $item) {
             $quantidade = max(1, (int) $item['quantidade']);
-            $base += $this->calculo->paraCentavos($item['custo_unitario_base']) * $quantidade;
-            $real += $this->calculo->paraCentavos($item['custo_total_real']);
+            $base += $this->calculo->paraMilesimos($item['custo_unitario_base']) * $quantidade;
+            $real += $this->calculo->paraMilesimos($item['custo_total_real']);
         }
 
         $adicionais = 0;
 
         foreach ($custos as $custo) {
-            $adicionais += $this->calculo->paraCentavos($custo['valor']);
+            $adicionais += $this->calculo->paraMilesimos($custo['valor']);
         }
 
         return [
-            'base' => $this->calculo->centavosParaDecimal($base),
-            'adicionais' => $this->calculo->centavosParaDecimal($adicionais),
-            'real' => $this->calculo->centavosParaDecimal($real),
+            'base' => $this->calculo->milesimosParaDecimal($base),
+            'adicionais' => $this->calculo->milesimosParaDecimal($adicionais),
+            'real' => $this->calculo->milesimosParaDecimal($real),
             'itens' => count($itens),
         ];
     }
@@ -474,15 +553,53 @@ class EntradaService
             ? null
             : $this->validarTexto($data['fornecedor'] ?? '', 2, 150, 'Fornecedor');
         $url = $this->validarUrl($data['url'] ?? '', true);
-        $precoCentavos = $this->validarMoeda($data['preco_custo'] ?? '', 'Preço de custo');
+        $precoMilesimos = $this->validarMoeda($data['preco_custo'] ?? '', 'Preço de custo');
         $observacoes = $this->validarTextoOpcional($data['oferta_observacoes'] ?? '', 255, 'Observações da oferta');
 
         return [
             'fornecedor' => $fornecedor,
             'url' => $url,
-            'preco_custo' => $this->calculo->centavosParaDecimal($precoCentavos),
+            'preco_custo' => $this->calculo->milesimosParaDecimal($precoMilesimos),
             'observacoes' => $observacoes,
         ];
+    }
+
+    private function validarAuxiliarOpcional(mixed $valor, string $campo): ?int
+    {
+        $id = (int) $valor;
+
+        if ($id <= 0) {
+            return null;
+        }
+
+        if (!isset(self::AUX_ITENS[$campo])) {
+            throw new InvalidArgumentException('Campo auxiliar inválido.');
+        }
+
+        $config = self::AUX_ITENS[$campo];
+
+        if ($this->configuracoes->buscar($config['table'], $id) === null) {
+            throw new InvalidArgumentException("{$config['label']} inválida.");
+        }
+
+        return $id;
+    }
+
+    private function validarAnoOpcional(mixed $valor): ?int
+    {
+        $texto = trim((string) $valor);
+
+        if ($texto === '') {
+            return null;
+        }
+
+        $ano = filter_var($texto, FILTER_VALIDATE_INT);
+
+        if ($ano === false || $ano < 1900 || $ano > 2100) {
+            throw new InvalidArgumentException('Ano de fabricação deve estar entre 1900 e 2100.');
+        }
+
+        return $ano;
     }
 
     private function validarModo(mixed $valor): string
@@ -566,16 +683,27 @@ class EntradaService
     private function validarMoeda(mixed $valor, string $campo): int
     {
         try {
-            $centavos = $this->calculo->paraCentavos($valor);
+            $milesimos = $this->calculo->paraMilesimos($valor);
         } catch (InvalidArgumentException) {
             throw new InvalidArgumentException("{$campo} inválido.");
         }
 
-        if ($centavos < 0 || $centavos > CalculoService::MAX_MONEY_CENTS) {
-            throw new InvalidArgumentException("{$campo} deve estar entre 0,00 e 9.999.999,99.");
+        if ($milesimos < 0 || $milesimos > CalculoService::MAX_MONEY_MILESIMOS) {
+            throw new InvalidArgumentException("{$campo} deve estar entre 0,000 e 999.999.999,999.");
         }
 
-        return $centavos;
+        return $milesimos;
+    }
+
+    private function removerItemAposFalha(int $itemId, int $entradaId, string $modo): void
+    {
+        $this->transaction(function () use ($itemId, $entradaId, $modo): void {
+            $this->itens->delete($itemId);
+
+            if ($modo === 'direta') {
+                $this->recalcularCustos($entradaId);
+            }
+        });
     }
 
     private function transaction(callable $callback): mixed

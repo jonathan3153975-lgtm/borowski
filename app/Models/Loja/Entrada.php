@@ -160,8 +160,10 @@ class Entrada extends Model
         $busca = trim((string) ($filters['busca'] ?? ''));
 
         if ($busca !== '') {
-            $conditions[] = '(e.descricao_origem LIKE :busca OR e.link_compra LIKE :busca OR e.codigo_rastreio LIKE :busca)';
-            $params[':busca'] = '%' . $busca . '%';
+            $conditions[] = '(e.descricao_origem LIKE :busca_descricao OR e.link_compra LIKE :busca_link OR e.codigo_rastreio LIKE :busca_rastreio)';
+            $params[':busca_descricao'] = '%' . $busca . '%';
+            $params[':busca_link'] = '%' . $busca . '%';
+            $params[':busca_rastreio'] = '%' . $busca . '%';
         }
 
         return [implode(' AND ', $conditions), $params];

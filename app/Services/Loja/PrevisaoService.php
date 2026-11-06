@@ -36,7 +36,7 @@ class PrevisaoService
 
         $fornecedor = $this->validarTexto($data['fornecedor'] ?? '', 2, 150, 'Fornecedor');
         $url = $this->validarUrl($data['url'] ?? '');
-        $precoCentavos = $this->validarMoeda($data['preco_custo'] ?? '', 'Preço de custo');
+        $precoMilesimos = $this->validarMoeda($data['preco_custo'] ?? '', 'Preço de custo');
         $observacoes = $this->validarTextoOpcional($data['oferta_observacoes'] ?? '', 255, 'Observações da oferta');
 
         if ($this->ofertas->existsByUrl($itemId, $url)) {
@@ -47,7 +47,7 @@ class PrevisaoService
             'item_id' => $itemId,
             'fornecedor' => $fornecedor,
             'url' => $url,
-            'preco_custo' => $this->calculo->centavosParaDecimal($precoCentavos),
+            'preco_custo' => $this->calculo->milesimosParaDecimal($precoMilesimos),
             'selecionado' => 0,
             'observacoes' => $observacoes,
         ]);
@@ -68,8 +68,8 @@ class PrevisaoService
         $oferta = $this->obterOfertaDoItem($itemId, $ofertaId);
 
         $quantidade = max(1, (int) $item['quantidade']);
-        $baseCentavos = $this->calculo->paraCentavos($oferta['preco_custo']);
-        $custos = $this->calculo->calcularItemPrevisao($quantidade, $baseCentavos);
+        $baseMilesimos = $this->calculo->paraMilesimos($oferta['preco_custo']);
+        $custos = $this->calculo->calcularItemPrevisao($quantidade, $baseMilesimos);
 
         $this->transaction(function () use ($itemId, $ofertaId, $custos): void {
             $this->ofertas->deselectAllForItem($itemId);
@@ -97,10 +97,10 @@ class PrevisaoService
 
             if ((int) $oferta['selecionado'] === 1) {
                 $this->itens->update($itemId, [
-                    'custo_unitario_base' => '0.00',
-                    'custo_adicional_rateado' => '0.00',
-                    'custo_total_real' => '0.00',
-                    'custo_unitario_real' => '0.00',
+                    'custo_unitario_base' => '0.000',
+                    'custo_adicional_rateado' => '0.000',
+                    'custo_total_real' => '0.000',
+                    'custo_unitario_real' => '0.000',
                 ]);
             }
         });
@@ -193,16 +193,16 @@ class PrevisaoService
     private function validarMoeda(mixed $valor, string $campo): int
     {
         try {
-            $centavos = $this->calculo->paraCentavos($valor);
+            $milesimos = $this->calculo->paraMilesimos($valor);
         } catch (InvalidArgumentException) {
             throw new InvalidArgumentException("{$campo} inválido.");
         }
 
-        if ($centavos < 0 || $centavos > CalculoService::MAX_MONEY_CENTS) {
-            throw new InvalidArgumentException("{$campo} deve estar entre 0,00 e 9.999.999,99.");
+        if ($milesimos < 0 || $milesimos > CalculoService::MAX_MONEY_MILESIMOS) {
+            throw new InvalidArgumentException("{$campo} deve estar entre 0,000 e 999.999.999,999.");
         }
 
-        return $centavos;
+        return $milesimos;
     }
 
     private function transaction(callable $callback): mixed

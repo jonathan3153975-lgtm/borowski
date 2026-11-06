@@ -12,6 +12,8 @@ $dashboardActive = $current === '/admin';
 $usersActive = str_starts_with($current, '/admin/usuarios');
 $lojaEntradasActive = $current === '/admin/loja' || str_starts_with($current, '/admin/loja/entradas');
 $lojaEstoqueActive = str_starts_with($current, '/admin/loja/estoque');
+$configActive = str_starts_with($current, '/admin/configuracoes');
+$configMenu = \App\Services\ConfiguracaoService::MAP;
 $extraStyles = $extraStyles ?? [];
 $extraScripts = $extraScripts ?? [];
 $initial = $user !== null ? mb_strtoupper(mb_substr((string) $user['nome'], 0, 1)) : '?';
@@ -89,6 +91,33 @@ $info = flash('info');
                     <i class="bi bi-boxes" aria-hidden="true"></i>
                     <span class="nav-label">Estoque</span>
                 </a>
+
+                <span class="admin-nav-label nav-label">Configurações</span>
+                <button
+                    type="button"
+                    class="admin-nav-link admin-nav-button admin-nav-toggle<?= $configActive ? ' active' : '' ?>"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#configMenuDesktop"
+                    aria-expanded="<?= $configActive ? 'true' : 'false' ?>"
+                    aria-controls="configMenuDesktop"
+                >
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                    <span class="nav-label">Configurações</span>
+                    <i class="bi bi-chevron-down ms-auto nav-label" aria-hidden="true"></i>
+                </button>
+                <div class="collapse admin-nav-collapse<?= $configActive ? ' show' : '' ?>" id="configMenuDesktop">
+                    <?php foreach ($configMenu as $tipoMenu => $configItem): ?>
+                        <?php $configLinkActive = str_starts_with($current, '/admin/configuracoes/' . $tipoMenu); ?>
+                        <a
+                            href="<?= e(url('/admin/configuracoes/' . $tipoMenu)) ?>"
+                            class="admin-nav-link admin-nav-sublink<?= $configLinkActive ? ' active' : '' ?>"
+                            <?= $configLinkActive ? 'aria-current="page"' : '' ?>
+                        >
+                            <i class="bi <?= e($configItem['icon']) ?>" aria-hidden="true"></i>
+                            <span class="nav-label"><?= e($configItem['plural']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
             </nav>
 
             <div class="admin-sidebar-foot">
@@ -236,6 +265,32 @@ $info = flash('info');
                     <i class="bi bi-boxes" aria-hidden="true"></i>
                     <span>Estoque</span>
                 </a>
+
+                <span class="admin-nav-label">Configurações</span>
+                <button
+                    type="button"
+                    class="admin-nav-link admin-nav-button admin-nav-toggle"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#configMenuMobile"
+                    aria-expanded="<?= $configActive ? 'true' : 'false' ?>"
+                    aria-controls="configMenuMobile"
+                >
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                    <span>Configurações</span>
+                    <i class="bi bi-chevron-down ms-auto" aria-hidden="true"></i>
+                </button>
+                <div class="collapse admin-nav-collapse<?= $configActive ? ' show' : '' ?>" id="configMenuMobile">
+                    <?php foreach ($configMenu as $tipoMenu => $configItem): ?>
+                        <?php $configLinkActive = str_starts_with($current, '/admin/configuracoes/' . $tipoMenu); ?>
+                        <a
+                            href="<?= e(url('/admin/configuracoes/' . $tipoMenu)) ?>"
+                            class="admin-nav-link admin-nav-sublink<?= $configLinkActive ? ' active' : '' ?>"
+                        >
+                            <i class="bi <?= e($configItem['icon']) ?>" aria-hidden="true"></i>
+                            <span><?= e($configItem['plural']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
             </nav>
 
             <form method="post" action="<?= e(url('/logout')) ?>" class="mt-4">
@@ -249,6 +304,8 @@ $info = flash('info');
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="<?= e(asset('js/masks.js')) ?>"></script>
     <script src="<?= e(asset('js/app.js')) ?>"></script>
     <script src="<?= e(asset('js/admin.js')) ?>"></script>
     <?php foreach ($extraScripts as $script): ?>

@@ -6,8 +6,10 @@ namespace App\Controllers\Loja;
 
 use App\Core\Controller;
 use App\Services\Loja\EntradaService;
+use App\Services\ConfiguracaoService;
 use App\Services\Loja\PrevisaoService;
 use InvalidArgumentException;
+use RuntimeException;
 
 class EntradaController extends Controller
 {
@@ -39,19 +41,6 @@ class EntradaController extends Controller
         ], $this->extraAssets()), 'admin');
     }
 
-    public function create(): void
-    {
-        $this->view('loja.entradas.criar', array_merge([
-            'title' => 'Nova entrada',
-            'breadcrumb' => [
-                ['label' => 'Loja', 'url' => null],
-                ['label' => 'Entrada de produtos', 'url' => '/admin/loja/entradas'],
-                ['label' => 'Nova entrada', 'url' => null],
-            ],
-            'activeTab' => 'entradas',
-        ], $this->extraAssets()), 'admin');
-    }
-
     public function store(): void
     {
         try {
@@ -61,7 +50,7 @@ class EntradaController extends Controller
         } catch (InvalidArgumentException $exception) {
             flash('error', $exception->getMessage());
             flash_input($_POST);
-            redirect('/admin/loja/entradas/criar');
+            redirect('/admin/loja/entradas');
         }
     }
 
@@ -83,6 +72,7 @@ class EntradaController extends Controller
             ],
             'activeTab' => 'entradas',
             'detail' => $detail,
+            'opcoes' => (new ConfiguracaoService())->opcoes(),
         ], $this->extraAssets()), 'admin');
     }
 
@@ -153,9 +143,14 @@ class EntradaController extends Controller
     public function addItem(string $id): void
     {
         try {
-            $this->entradas->adicionarItem((int) $id, $_POST, (array) auth_user());
+            $this->entradas->adicionarItem(
+                (int) $id,
+                $_POST,
+                (array) auth_user(),
+                $_FILES['imagens'] ?? []
+            );
             flash('success', 'Item incluído com sucesso.');
-        } catch (InvalidArgumentException $exception) {
+        } catch (InvalidArgumentException | RuntimeException $exception) {
             flash('error', $exception->getMessage());
             flash_input($_POST);
         }
@@ -166,7 +161,7 @@ class EntradaController extends Controller
     public function updateItem(string $id, string $itemId): void
     {
         try {
-            $this->entradas->atualizarItem((int) $itemId, $_POST, (array) auth_user());
+            $this->entradas->atualizarItem((int) $itemId, $_POST, (array) auth_user(), $_FILES['imagens'] ?? []);
             flash('success', 'Item atualizado com sucesso.');
         } catch (InvalidArgumentException $exception) {
             flash('error', $exception->getMessage());
@@ -243,13 +238,23 @@ class EntradaController extends Controller
 
     private function filters(): array
     {
-        $modo = (string) ($_GET['modo'] ?? '');
-        $recebido = (string) ($_GET['recebido'] ?? '');
+        $modoParam = $_GET['modo'] ?? '';
+        $recebidoParam = $_GET['recebido'] ?? '';
+        $buscaParam = $_GET['busca'] ?? '';
+
+        $modo = is_string($modoParam) && in_array($modoParam, ['direta', 'previsao'], true)
+            ? $modoParam
+            : '';
+        $recebido = $modo === 'direta'
+            && is_string($recebidoParam)
+            && in_array($recebidoParam, ['0', '1'], true)
+                ? $recebidoParam
+                : '';
 
         return [
-            'modo' => in_array($modo, ['direta', 'previsao'], true) ? $modo : '',
-            'recebido' => in_array($recebido, ['0', '1'], true) ? $recebido : '',
-            'busca' => trim((string) ($_GET['busca'] ?? '')),
+            'modo' => $modo,
+            'recebido' => $recebido,
+            'busca' => is_string($buscaParam) ? trim($buscaParam) : '',
         ];
     }
 

@@ -15,6 +15,15 @@ class ItemEstoque extends Model
     {
         $statement = $this->db->prepare(
             'SELECT i.*,
+                cat.nome AS categoria_nome, mar.nome AS marca_nome,
+                fab.nome AS fabricante_nome, col.nome AS colecao_nome,
+                esc.nome AS escala_nome,
+                (SELECT li.id FROM loja_item_imagens li
+                    WHERE li.item_id = i.id
+                    ORDER BY li.imagem_principal DESC, li.ordem_exibicao ASC, li.id ASC
+                    LIMIT 1) AS imagem_id,
+                (SELECT COUNT(*) FROM loja_item_imagens li
+                    WHERE li.item_id = i.id) AS imagens_count,
                 (SELECT f.fornecedor FROM loja_item_fornecedores f
                     WHERE f.item_id = i.id AND f.selecionado = 1 LIMIT 1) AS fornecedor_selecionado,
                 (SELECT MIN(f.preco_custo) FROM loja_item_fornecedores f
@@ -22,6 +31,11 @@ class ItemEstoque extends Model
                 (SELECT COUNT(*) FROM loja_item_fornecedores f
                     WHERE f.item_id = i.id) AS ofertas_count
              FROM loja_itens i
+             LEFT JOIN categorias cat ON cat.id = i.categoria_id
+             LEFT JOIN marcas mar ON mar.id = i.marca_id
+             LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
+             LEFT JOIN colecoes col ON col.id = i.colecao_id
+             LEFT JOIN escalas esc ON esc.id = i.escala_id
              WHERE i.entrada_id = :entrada_id
              ORDER BY i.id ASC'
         );
@@ -34,9 +48,17 @@ class ItemEstoque extends Model
     {
         $statement = $this->db->prepare(
             'SELECT i.*, e.modo AS entrada_modo, e.recebido AS entrada_recebido,
-                e.descricao_origem AS entrada_descricao
+                e.descricao_origem AS entrada_descricao,
+                cat.nome AS categoria_nome, mar.nome AS marca_nome,
+                fab.nome AS fabricante_nome, col.nome AS colecao_nome,
+                esc.nome AS escala_nome
              FROM loja_itens i
              INNER JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN categorias cat ON cat.id = i.categoria_id
+             LEFT JOIN marcas mar ON mar.id = i.marca_id
+             LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
+             LEFT JOIN colecoes col ON col.id = i.colecao_id
+             LEFT JOIN escalas esc ON esc.id = i.escala_id
              WHERE i.id = :id
              LIMIT 1'
         );
@@ -51,23 +73,31 @@ class ItemEstoque extends Model
     {
         $statement = $this->db->prepare(
             'INSERT INTO loja_itens
-                (entrada_id, nome, descricao, codigo, quantidade, custo_unitario_base,
+                (entrada_id, categoria_id, marca_id, fabricante_id, colecao_id, escala_id, ano_fabricacao,
+                 nome, descricao, codigo, quantidade, custo_unitario_base,
                  custo_adicional_rateado, custo_total_real, custo_unitario_real, status, observacoes)
              VALUES
-                (:entrada_id, :nome, :descricao, :codigo, :quantidade, :custo_unitario_base,
+                (:entrada_id, :categoria_id, :marca_id, :fabricante_id, :colecao_id, :escala_id, :ano_fabricacao,
+                 :nome, :descricao, :codigo, :quantidade, :custo_unitario_base,
                  :custo_adicional_rateado, :custo_total_real, :custo_unitario_real, :status, :observacoes)'
         );
 
         $statement->execute([
             'entrada_id' => $data['entrada_id'],
+            'categoria_id' => $data['categoria_id'] ?? null,
+            'marca_id' => $data['marca_id'] ?? null,
+            'fabricante_id' => $data['fabricante_id'] ?? null,
+            'colecao_id' => $data['colecao_id'] ?? null,
+            'escala_id' => $data['escala_id'] ?? null,
+            'ano_fabricacao' => $data['ano_fabricacao'] ?? null,
             'nome' => $data['nome'],
             'descricao' => $data['descricao'] ?? null,
             'codigo' => $data['codigo'] ?? null,
             'quantidade' => $data['quantidade'],
-            'custo_unitario_base' => $data['custo_unitario_base'] ?? '0.00',
-            'custo_adicional_rateado' => $data['custo_adicional_rateado'] ?? '0.00',
-            'custo_total_real' => $data['custo_total_real'] ?? '0.00',
-            'custo_unitario_real' => $data['custo_unitario_real'] ?? '0.00',
+            'custo_unitario_base' => $data['custo_unitario_base'] ?? '0.000',
+            'custo_adicional_rateado' => $data['custo_adicional_rateado'] ?? '0.000',
+            'custo_total_real' => $data['custo_total_real'] ?? '0.000',
+            'custo_unitario_real' => $data['custo_unitario_real'] ?? '0.000',
             'status' => $data['status'],
             'observacoes' => $data['observacoes'] ?? null,
         ]);
@@ -78,6 +108,7 @@ class ItemEstoque extends Model
     public function update(int $id, array $data): bool
     {
         $allowed = [
+            'categoria_id', 'marca_id', 'fabricante_id', 'colecao_id', 'escala_id', 'ano_fabricacao',
             'nome', 'descricao', 'codigo', 'quantidade', 'custo_unitario_base',
             'custo_adicional_rateado', 'custo_total_real', 'custo_unitario_real',
             'status', 'observacoes',
@@ -146,12 +177,26 @@ class ItemEstoque extends Model
 
         $statement = $this->db->prepare(
             "SELECT i.*, e.descricao_origem AS entrada_descricao, e.modo AS entrada_modo,
+                cat.nome AS categoria_nome, mar.nome AS marca_nome,
+                fab.nome AS fabricante_nome, col.nome AS colecao_nome,
+                esc.nome AS escala_nome,
+                (SELECT li.id FROM loja_item_imagens li
+                    WHERE li.item_id = i.id
+                    ORDER BY li.imagem_principal DESC, li.ordem_exibicao ASC, li.id ASC
+                    LIMIT 1) AS imagem_id,
+                (SELECT COUNT(*) FROM loja_item_imagens li
+                    WHERE li.item_id = i.id) AS imagens_count,
                 (SELECT f.fornecedor FROM loja_item_fornecedores f
                     WHERE f.item_id = i.id AND f.selecionado = 1 LIMIT 1) AS fornecedor_selecionado,
                 (SELECT MIN(f.preco_custo) FROM loja_item_fornecedores f
                     WHERE f.item_id = i.id) AS menor_oferta
              FROM loja_itens i
              INNER JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN categorias cat ON cat.id = i.categoria_id
+             LEFT JOIN marcas mar ON mar.id = i.marca_id
+             LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
+             LEFT JOIN colecoes col ON col.id = i.colecao_id
+             LEFT JOIN escalas esc ON esc.id = i.escala_id
              WHERE {$where}
              ORDER BY i.criado_em DESC, i.id DESC
              LIMIT :limit OFFSET :offset"
@@ -217,8 +262,10 @@ class ItemEstoque extends Model
         $busca = trim((string) ($filters['busca'] ?? ''));
 
         if ($busca !== '') {
-            $conditions[] = '(i.nome LIKE :busca OR i.codigo LIKE :busca OR e.descricao_origem LIKE :busca)';
-            $params[':busca'] = '%' . $busca . '%';
+            $conditions[] = '(i.nome LIKE :busca_nome OR i.codigo LIKE :busca_codigo OR e.descricao_origem LIKE :busca_entrada)';
+            $params[':busca_nome'] = '%' . $busca . '%';
+            $params[':busca_codigo'] = '%' . $busca . '%';
+            $params[':busca_entrada'] = '%' . $busca . '%';
         }
 
         return [implode(' AND ', $conditions), $params];

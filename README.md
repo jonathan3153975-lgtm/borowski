@@ -1,6 +1,6 @@
 # Loja de Carrinhos
 
-Sistema próprio de gerenciamento para uma loja virtual de carrinhos colecionáveis, com painel administrativo e loja virtual previstos para evolução em etapas. Esta entrega corresponde às **Etapas 01 e 02**: fundação do sistema, autenticação e módulo Loja (entrada de produtos e estoque).
+Sistema próprio de gerenciamento para uma loja virtual de carrinhos colecionáveis, com painel administrativo e loja virtual previstos para evolução em etapas. Esta entrega corresponde às **Etapas 01 e 02** e aos ajustes do módulo Loja: fundação do sistema, autenticação, entrada de produtos, estoque, fotos de itens e cadastros auxiliares. O cadastro de produtos foi removido da interface; as informações de catálogo agora ficam diretamente nos itens.
 
 ## Situação atual
 
@@ -15,7 +15,15 @@ Sistema próprio de gerenciamento para uma loja virtual de carrinhos colecionáv
 - Compra direta com custos adicionais, itens, recebimento e custo real calculado.
 - Previsão de compra com múltiplos fornecedores por item e seleção de oferta.
 - Estoque com filtros por disponível, em transporte e em pré-venda.
-- Migrations iniciais e script CLI para criar o primeiro super-administrador.
+- Entrada de produtos com filtros em pills, topo fixo, cards no mobile e cadastro de item em modal com fotos.
+- Nova entrada de produtos em modal.
+- Itens com categoria, marca, fabricante, coleção, escala e ano de fabricação.
+- Cadastros auxiliares de categorias, marcas, fabricantes, coleções e escalas no menu **Configurações**.
+- Fotos dos itens com upload múltiplo, pré-visualização e miniaturas nas listas.
+- Botões de ação em ícone no mobile e cards de resumo em uma coluna no mobile.
+- Estoque com topo fixo, busca compacta no scroll mobile e cards informativos acima da lista.
+- Precisão monetária de 3 casas decimais com máscara.
+- Migrations controladas por `schema_migrations` e script CLI para o primeiro super-administrador.
 - Documentação técnica em [`Manual/`](Manual/README.md).
 
 ## Tecnologias
@@ -29,7 +37,8 @@ Sistema próprio de gerenciamento para uma loja virtual de carrinhos colecionáv
 | vlucas/phpdotenv | 5.8.0 |
 | Bootstrap | 5.3.3 via CDN |
 | Bootstrap Icons | 1.11.3 via CDN |
-| JavaScript | Puro, sem dependências adicionais |
+| jQuery | 3.7.1 via CDN |
+| JavaScript | Puro + máscaras e AJAX com jQuery |
 
 ## Início rápido
 
@@ -49,8 +58,9 @@ php -S 127.0.0.1:8090 -t public public/index.php
 
 Acesse `http://127.0.0.1:8090/login`.
 
-Rotas principais do módulo Loja:
+Rotas principais:
 
+- `http://127.0.0.1:8090/admin/configuracoes/categorias`
 - `http://127.0.0.1:8090/admin/loja/entradas`
 - `http://127.0.0.1:8090/admin/loja/estoque`
 
@@ -61,13 +71,15 @@ Rotas principais do módulo Loja:
 ```text
 app/            Núcleo MVC, controllers, models, services, middlewares, views e helpers
 config/         Configurações de aplicação e banco
-database/       Migrations, incluindo as tabelas do módulo Loja, e pasta de seeds
+database/       Migrations (Loja, precisão monetária, catálogo dos itens e fotos)
 Manual/         Documentação técnica obrigatória
 public/         Document root (index.php, .htaccess e assets)
-routes/         Rotas web, administrativas e do módulo Loja
+routes/         Rotas web, administrativas, Loja e Configurações
 scripts/        Migrations, super-administrador e testes de cálculo
-storage/        Logs e arquivos temporários
+storage/        Logs, arquivos temporários e uploads de itens
 ```
+
+As fotos dos itens ficam em `storage/uploads/loja_itens/`, fora do document root, e são servidas pela rota autenticada `/admin/loja/itens/imagem/{id}`.
 
 ## Documentação
 
@@ -78,4 +90,7 @@ storage/        Logs e arquivos temporários
 - [Manual/04-AUTENTICACAO-E-ACESSO.md](Manual/04-AUTENTICACAO-E-ACESSO.md)
 - [Manual/05-INTERFACE.md](Manual/05-INTERFACE.md)
 - [Manual/06-MODULO-LOJA.md](Manual/06-MODULO-LOJA.md)
+- [Manual/09-CADASTRO-DE-PRODUTOS.md](Manual/09-CADASTRO-DE-PRODUTOS.md) (histórico)
+- [Manual/10-CATEGORIAS-MARCAS-COLECOES.md](Manual/10-CATEGORIAS-MARCAS-COLECOES.md)
+- [Manual/11-COMPONENTES-VISUAIS-PRODUTOS.md](Manual/11-COMPONENTES-VISUAIS-PRODUTOS.md) (histórico)
 - [Manual/CHANGELOG.md](Manual/CHANGELOG.md)

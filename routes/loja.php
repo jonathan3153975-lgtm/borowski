@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Controllers\Loja\EntradaController;
 use App\Controllers\Loja\EstoqueController;
+use App\Controllers\Loja\ItemImagemController;
 use App\Core\Router;
 use App\Middleware\AuthMiddleware;
 
@@ -15,7 +16,6 @@ return static function (Router $router): void {
     }, $auth);
 
     $router->get('/admin/loja/entradas', [EntradaController::class, 'index'], $auth);
-    $router->get('/admin/loja/entradas/criar', [EntradaController::class, 'create'], $auth);
     $router->post('/admin/loja/entradas', [EntradaController::class, 'store'], $auth);
     $router->get('/admin/loja/entradas/{id}', [EntradaController::class, 'show'], $auth);
     $router->post('/admin/loja/entradas/{id}', [EntradaController::class, 'update'], $auth);
@@ -25,6 +25,7 @@ return static function (Router $router): void {
     $router->post('/admin/loja/entradas/{id}/custos/{custoId}/excluir', [EntradaController::class, 'deleteCost'], $auth);
     $router->post('/admin/loja/entradas/{id}/itens', [EntradaController::class, 'addItem'], $auth);
     $router->post('/admin/loja/entradas/{id}/itens/{itemId}/atualizar', [EntradaController::class, 'updateItem'], $auth);
+    $router->get('/admin/loja/itens/imagem/{id}', [ItemImagemController::class, 'show'], $auth);
     $router->post('/admin/loja/itens/{itemId}/excluir', [EntradaController::class, 'deleteItem'], $auth);
     $router->post('/admin/loja/itens/{itemId}/fornecedores', [EntradaController::class, 'addOffer'], $auth);
     $router->post('/admin/loja/itens/{itemId}/fornecedores/{ofertaId}/selecionar', [EntradaController::class, 'selectOffer'], $auth);

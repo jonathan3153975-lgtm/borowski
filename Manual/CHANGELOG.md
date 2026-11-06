@@ -1,4 +1,238 @@
-# Changelog
+﻿# Changelog
+
+## [Ajustes de Catálogo nos Itens, Nova Entrada em Modal e Estoque] — 2026-11-05
+
+### Entregue
+
+- Cadastro de produtos removido da interface:
+  - menu **Produtos** removido;
+  - `routes/produtos.php` não é mais carregado;
+  - vínculo `produto_id` removido do formulário de item;
+  - tabelas históricas mantidas no banco; código do módulo removido.
+- Informações de catálogo diretamente nos itens:
+  - categoria, marca, fabricante, coleção, escala e ano de fabricação;
+  - campos opcionais validados no backend;
+  - exibidos como metadados nas listas de itens e no estoque.
+- Nova entrada de produtos:
+  - formulário convertido para **modal** na listagem;
+  - repopulação e reabertura automática em caso de erro;
+  - rota/página antiga de criação removida.
+- Detalhes da entrada:
+  - botões de ação do cabeçalho e de adicionar item exibem apenas ícones no mobile;
+  - cards de resumo em uma coluna no mobile.
+- Tela de Estoque:
+  - mesmo padrão de topo da Entrada de produtos;
+  - pesquisa por texto sem botão **Pesquisar**;
+  - filtros em pills e cards informativos acima da lista;
+  - topo fixo e modo compacto no mobile, mantendo apenas a busca.
+- Nova migration `007_add_catalogo_to_loja_itens.sql`.
+- Configurações auxiliares agora bloqueiam exclusão com base em **itens** vinculados, não em produtos.
+
+### Arquivos principais
+
+- `database/migrations/007_add_catalogo_to_loja_itens.sql`
+- `app/Views/loja/entradas/index.php`
+- `app/Views/loja/entradas/detalhe.php`
+- `app/Views/loja/estoque/index.php`
+- `app/Views/loja/partials/entrada-form.php`
+- `app/Views/loja/partials/item-edit-modal.php`
+- `app/Models/Loja/ItemEstoque.php`
+- `app/Services/Loja/EntradaService.php`
+- `app/Controllers/Loja/EntradaController.php`
+- `app/Models/Configuracao.php`
+- `app/Services/ConfiguracaoService.php`
+- `app/Views/layouts/admin.php`
+- `public/index.php`
+- `routes/loja.php`
+- `public/assets/css/loja.css`
+- `public/assets/js/loja.js`
+
+### Testes realizados
+
+- Ajustes de catálogo, modal, filtros e estoque: **57 verificações HTTP**, todas passaram.
+- Módulo Loja após os ajustes: **62 verificações**, todas passaram.
+- 64 arquivos PHP verificados com `php -l`, sem erros.
+- Migrations 001 a 007 controladas por `schema_migrations`.
+- Fotos de itens salvas, servidas e removidas corretamente.
+- Exclusão de categoria vinculada a item bloqueada.
+- Dados existentes do ambiente preservados.
+
+### Limitações
+
+- As tabelas do módulo de produtos permanecem no banco como histórico; não há mais código nem rotas ativas.
+- As fotos dos itens não possuem tela posterior para reordenar, substituir ou alterar a principal.
+- A tela de Estoque mantém tabela responsiva; a conversão em cards mobile foi aplicada à listagem de Entradas.
+- O ambiente local continua apontando para o MariaDB de teste na porta `3307`.
+
+## [Ajustes de UX da Entrada de produtos e Fotos de Itens] — 2026-11-05
+
+### Entregue
+
+- Listagem de **Entrada de produtos**:
+  - pesquisa por texto no topo, ocupando a maior parte da linha;
+  - filtros de modo em pills;
+  - filtro de recebimento em pills, habilitado apenas em compra direta;
+  - pills de recebimento desabilitadas em previsão;
+  - botão **Filtrar** removido;
+  - controller ignora `recebido` quando o modo não é direto;
+  - barra superior fixa, rolando apenas a lista;
+  - comportamento compacto no mobile ao rolar, mantendo apenas a busca;
+  - tabela convertida em cards modernos no mobile.
+- Cadastro de item:
+  - formulário convertido para modal completo;
+  - vínculo com produto, identificação, quantidade, custo/oferta e observações;
+  - upload múltiplo de fotos com pré-visualização;
+  - validação das fotos antes da criação do item;
+  - fechamento do modal e atualização da lista após salvar;
+  - reabertura do modal em caso de erro de validação;
+  - fotos exibidas como miniaturas nas listas e no estoque.
+- Fotos de itens:
+  - nova tabela `loja_item_imagens`;
+  - armazenamento em `storage/uploads/loja_itens/`;
+  - rota autenticada `/admin/loja/itens/imagem/{id}`;
+  - exclusão dos arquivos ao excluir item ou entrada;
+  - limites configuráveis por `ITEM_IMAGE_MAX_SIZE` e `ITEM_IMAGE_MAX_IMAGES`.
+- Nova migration `006_create_loja_item_imagens.sql`.
+- Documentação atualizada em `Manual/02`, `Manual/03`, `Manual/05` e `Manual/06`.
+
+### Arquivos principais
+
+- `database/migrations/006_create_loja_item_imagens.sql`
+- `app/Models/Loja/ItemImagem.php`
+- `app/Services/Loja/ItemImagemService.php`
+- `app/Controllers/Loja/ItemImagemController.php`
+- `app/Views/loja/entradas/index.php`
+- `app/Views/loja/entradas/detalhe.php`
+- `app/Views/loja/estoque/index.php`
+- `app/Models/Loja/ItemEstoque.php`
+- `app/Services/Loja/EntradaService.php`
+- `app/Controllers/Loja/EntradaController.php`
+- `app/Helpers/functions.php`
+- `routes/loja.php`
+- `public/assets/css/loja.css`
+- `public/assets/css/style.css`
+- `public/assets/js/app.js`
+- `public/assets/js/loja.js`
+- `config/app.php`, `.env`, `.env.example` e `.gitignore`
+
+### Testes realizados
+
+- 71 arquivos PHP da pasta `app` verificados com `php -l`, sem erros.
+- Ajustes de UX e fotos de itens: 32 verificações HTTP, todas passaram.
+- Módulo Loja após os ajustes: 62 verificações, todas passaram.
+- Validação de upload inválido sem criar item.
+- Rota de foto de item retornando imagem autenticada.
+- Exclusão de fotos ao excluir entrada.
+- Filtros de modo/recebimento e cards mobile validados.
+- Migrations 001 a 006 controladas por `schema_migrations`.
+
+### Limitações
+
+- As fotos dos itens não possuem tela de gerenciamento posterior (definir principal, reordenar, substituir) nesta rodada.
+- O vínculo com produto continua opcional.
+- A loja pública e os módulos de vendas/pedidos ainda não existem.
+- O ambiente local continua apontando para o MariaDB de teste na porta `3307`.
+
+## [Módulo de Produtos e Precisão Monetária] — 2026-11-05
+
+### Entregue
+
+- Precisão monetária de **3 casas decimais** em todo o sistema:
+  - colunas do módulo Loja e `preco_venda` em `DECIMAL(12,3)`;
+  - cálculos internos em milésimos inteiros;
+  - máscara `1.234,567` nos campos monetários;
+  - exibição padronizada em `R$ 1.234,567`.
+- Cadastro completo de produtos:
+  - informações principais, características e dados comerciais;
+  - SKU único;
+  - preço de venda com autorização de exibição;
+  - destaque para linhas da loja.
+- Cadastros auxiliares:
+  - categorias, marcas, fabricantes, coleções e escalas;
+  - CRUD no novo menu **Configurações**;
+  - cadastro rápido via AJAX no formulário de produto.
+- Gerenciador de imagens:
+  - upload múltiplo com pré-visualização;
+  - armazenamento seguro em `storage/uploads/produtos`;
+  - imagem principal, ordenação, substituição e exclusão;
+  - carrossel com indicadores, setas e miniaturas;
+  - rota pública controlada `/produto-imagem/{id}`.
+- Componentes visuais reutilizáveis:
+  - card de produto;
+  - linha horizontal com setas, rolagem por toque e quantidade configurável de cards;
+  - carrossel de imagens.
+- Integração com o módulo Loja:
+  - coluna `produto_id` em `loja_itens`;
+  - seleção de produto no cadastro de item;
+  - saldo, custo médio real e histórico calculados a partir das entradas;
+  - exclusão de produto bloqueada quando há vínculo com estoque.
+- Migration runner com tabela `schema_migrations`.
+- Novas migrations:
+  - `003_alter_money_precision.sql`;
+  - `004_create_produtos_tables.sql`;
+  - `005_add_produto_id_to_loja_itens.sql`.
+- jQuery 3.7.1 e `masks.js` adicionados ao painel administrativo.
+
+### Arquivos principais criados
+
+- `app/Controllers/ProdutoController.php`
+- `app/Controllers/ProdutoImagemController.php`
+- `app/Controllers/ConfiguracaoController.php`
+- `app/Models/Produto.php`
+- `app/Models/ProdutoImagem.php`
+- `app/Models/Configuracao.php`
+- `app/Services/ProdutoService.php`
+- `app/Services/ProdutoImagemService.php`
+- `app/Services/ConfiguracaoService.php`
+- `app/Views/produtos/**`
+- `app/Views/configuracoes/**`
+- `routes/produtos.php`
+- `routes/configuracoes.php`
+- `public/assets/css/produtos.css`
+- `public/assets/css/configuracoes.css`
+- `public/assets/js/produtos.js`
+- `public/assets/js/masks.js`
+- `database/migrations/003_alter_money_precision.sql`
+- `database/migrations/004_create_produtos_tables.sql`
+- `database/migrations/005_add_produto_id_to_loja_itens.sql`
+
+### Arquivos alterados
+
+- `app/Core/Controller.php` — resposta JSON.
+- `app/Models/Configuracao.php`, `Produto.php`, `ProdutoImagem.php` — novos models.
+- `app/Services/Loja/CalculoService.php` — milésimos e 3 casas.
+- `app/Services/Loja/EntradaService.php` — vínculo com produto e 3 casas.
+- `app/Services/Loja/PrevisaoService.php` — 3 casas.
+- `app/Models/Loja/*` — precisão e integração com produto.
+- `app/Views/layouts/admin.php` — menu Produtos/Configurações, jQuery, máscara e assets extras.
+- `app/Views/loja/**` — máscara, 3 casas e select de produto.
+- `app/Helpers/functions.php` — formatação monetária com 3 casas e URL de imagem.
+- `scripts/migrate.php` — controle de migrations aplicadas.
+- `config/app.php`, `.env` e `.env.example` — configurações de upload.
+- `.gitignore` — uploads fora do versionamento.
+- `README.md` e documentação em `Manual/`.
+
+### Testes realizados
+
+- 79 arquivos PHP verificados com `php -l`, sem erros.
+- Cálculo monetário: 29 verificações, todas passaram.
+- Módulo de produtos: 74 verificações HTTP, todas passaram.
+- Módulo Loja após a refatoração: 62 verificações, todas passaram.
+- Paginação do estoque: 9 verificações, todas passaram.
+- Regressão de autenticação, usuários e auditoria: 11 verificações, todas passaram.
+- Migrations 001 a 005 aplicadas e controladas por `schema_migrations`.
+- Upload inválido rejeitado; rota pública servindo apenas imagens.
+- Exclusão de produto e categoria bloqueada quando há vínculos.
+- Dados de teste removidos ao final, preservando registros existentes do ambiente.
+
+### Limitações conhecidas
+
+- A loja pública ainda não foi implementada.
+- Não há carrinho, checkout, pedidos ou pagamentos.
+- Não há variações de produto, código de barras, importação/exportação ou exclusão em massa.
+- Não há conversão automática de item em pré-venda para compra direta.
+- O vínculo do item ao produto depende da seleção no formulário do módulo Loja.
+- O ambiente local continua apontando para a instância MariaDB de teste na porta `3307`.
 
 ## [Etapa 02] — 2026-11-05
 

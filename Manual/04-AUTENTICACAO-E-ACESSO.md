@@ -27,8 +27,12 @@ Não existem permissões individuais por módulo nesta etapa.
 | POST | `/admin/usuarios/{id}/excluir` | Bloqueado | 403 | Permitido |
 | GET | `/admin/loja`, `/admin/loja/entradas` e `/admin/loja/estoque` | Bloqueado | Permitido | Permitido |
 | POST | `/admin/loja/**` | Bloqueado | Permitido | Permitido |
+| GET | `/admin/configuracoes/**` | Bloqueado | Permitido | Permitido |
+| POST | `/admin/configuracoes/**` | Bloqueado | Permitido | Permitido |
 
-Ocultar o menu na interface é apenas melhoria de experiência. A autorização real ocorre sempre no backend. O módulo Loja é operacional e está disponível para os dois perfis administrativos.
+Ocultar o menu na interface é apenas melhoria de experiência. A autorização real ocorre sempre no backend. Os módulos Loja e Configurações são operacionais e estão disponíveis para os dois perfis administrativos. O cadastro de produtos foi removido da interface.
+
+As fotos de itens usam a rota autenticada `/admin/loja/itens/imagem/{id}`, que serve apenas arquivos de imagem validados, localizados dentro de `storage/uploads`, com MIME permitido e sem expor o caminho interno.
 
 ## Fluxo de login
 
@@ -142,7 +146,9 @@ Não existe instalador web nesta entrega. A `INSTALL_KEY` está reservada em `.e
 
 A tabela `logs_auditoria` preserva os eventos mesmo após a exclusão de administradores. O `usuario_id` referencia o ator da ação; quando o usuário é excluído, o campo passa a `NULL` por `ON DELETE SET NULL`.
 
-O `AuditService` centraliza o registro e é reutilizado pelo `UserService` e pelos services do módulo Loja. As ações do módulo estão listadas em [06-MODULO-LOJA.md](06-MODULO-LOJA.md#auditoria).
+O `AuditService` centraliza o registro e é reutilizado pelo `UserService`, pelo módulo Loja e pelos módulos de Produtos e Configurações.
+
+Ações do módulo Loja: [06-MODULO-LOJA.md](06-MODULO-LOJA.md#auditoria). Ações de produtos, configurações e imagens: [09-CADASTRO-DE-PRODUTOS.md](09-CADASTRO-DE-PRODUTOS.md) e [10-CATEGORIAS-MARCAS-COLECOES.md](10-CATEGORIAS-MARCAS-COLECOES.md).
 
 Nunca são registrados:
 
@@ -151,7 +157,8 @@ Nunca são registrados:
 - tokens CSRF ou de sessão;
 - chave de instalação;
 - conteúdo completo de formulários;
-- URLs completas de fornecedores com possíveis parâmetros sensíveis.
+- URLs completas de fornecedores com possíveis parâmetros sensíveis;
+- caminhos internos absolutos de arquivos.
 
 ## Testes realizados
 
@@ -169,5 +176,9 @@ Roteiro automatizado via HTTP, com banco isolado de teste:
 - Rotas inexistentes (404) e método incorreto (405).
 - Proteção das rotas do módulo Loja.
 - Auditoria do módulo Loja sem dados sensíveis.
+- Proteção das rotas de configurações.
+- Rota autenticada de fotos de itens servindo apenas MIME de imagem.
+- Upload inválido rejeitado sem criar item.
+- Auditoria de configurações, itens e fotos de itens.
 
-Resultado: **todos os testes passaram**. Detalhes do módulo em [06-MODULO-LOJA.md](06-MODULO-LOJA.md).
+Resultado: **todos os testes passaram**. Detalhes em [06-MODULO-LOJA.md](06-MODULO-LOJA.md) e [10-CATEGORIAS-MARCAS-COLECOES.md](10-CATEGORIAS-MARCAS-COLECOES.md).

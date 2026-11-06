@@ -6,104 +6,114 @@ $result = $result ?? ['items' => [], 'total' => 0, 'page' => 1, 'pages' => 1, 'r
 $filters = $filters ?? ['status' => '', 'busca' => ''];
 $items = $result['items'];
 $resumo = $result['resumo'];
-$hasFilters = $filters['status'] !== '' || $filters['busca'] !== '';
+$busca = (string) ($filters['busca'] ?? '');
+$status = (string) ($filters['status'] ?? '');
+$hasFilters = $busca !== '' || $status !== '';
 $statusOptions = [
     '' => 'Todos',
     'disponivel' => 'Disponível em estoque',
     'em_transporte' => 'Em transporte',
     'pre_venda' => 'Em pré-venda',
 ];
-?>
-<?php require __DIR__ . '/../partials/tabs.php'; ?>
+$baseQuery = array_filter([
+    'status' => $status,
+    'busca' => $busca,
+], static fn (string $value): bool => $value !== '');
+$makeUrl = static function (array $overrides = []) use ($baseQuery): string {
+    $query = array_filter(
+        array_merge($baseQuery, $overrides),
+        static fn (mixed $value): bool => $value !== null && $value !== ''
+    );
 
-<div class="toolbar">
-    <form method="get" action="<?= e(url('/admin/loja/estoque')) ?>" class="toolbar-filters" role="search">
-        <input type="hidden" name="status" value="<?= e($filters['status']) ?>">
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-8">
-                <label for="busca" class="form-label">Pesquisar no estoque</label>
+    return url('/admin/loja/estoque' . ($query === [] ? '' : '?' . http_build_query($query)));
+};
+?>
+<div class="loja-sticky-top" data-loja-sticky-top>
+    <?php require __DIR__ . '/../partials/tabs.php'; ?>
+
+    <div class="loja-stock-summary-wrap">
+        <div class="loja-summary-grid loja-summary-grid-6 loja-stock-summary">
+            <article class="loja-summary-card">
+                <span class="loja-summary-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                <div>
+                    <span class="loja-summary-label">Itens cadastrados</span>
+                    <strong class="loja-summary-value"><?= (int) ($resumo['total_itens'] ?? 0) ?></strong>
+                </div>
+            </article>
+            <article class="loja-summary-card">
+                <span class="loja-summary-icon"><i class="bi bi-boxes" aria-hidden="true"></i></span>
+                <div>
+                    <span class="loja-summary-label">Unidades totais</span>
+                    <strong class="loja-summary-value"><?= (int) ($resumo['total_unidades'] ?? 0) ?></strong>
+                </div>
+            </article>
+            <article class="loja-summary-card">
+                <span class="loja-summary-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                <div>
+                    <span class="loja-summary-label">Disponíveis</span>
+                    <strong class="loja-summary-value"><?= (int) ($resumo['unidades_disponivel'] ?? 0) ?></strong>
+                </div>
+            </article>
+            <article class="loja-summary-card">
+                <span class="loja-summary-icon"><i class="bi bi-truck" aria-hidden="true"></i></span>
+                <div>
+                    <span class="loja-summary-label">Em transporte</span>
+                    <strong class="loja-summary-value"><?= (int) ($resumo['unidades_em_transporte'] ?? 0) ?></strong>
+                </div>
+            </article>
+            <article class="loja-summary-card">
+                <span class="loja-summary-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></span>
+                <div>
+                    <span class="loja-summary-label">Em pré-venda</span>
+                    <strong class="loja-summary-value"><?= (int) ($resumo['unidades_pre_venda'] ?? 0) ?></strong>
+                </div>
+            </article>
+            <article class="loja-summary-card">
+                <span class="loja-summary-icon"><i class="bi bi-calculator" aria-hidden="true"></i></span>
+                <div>
+                    <span class="loja-summary-label">Custo real total</span>
+                    <strong class="loja-summary-value"><?= e(format_money($resumo['valor_total_real'] ?? 0)) ?></strong>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div class="loja-entry-toolbar">
+        <form method="get" action="<?= e(url('/admin/loja/estoque')) ?>" class="loja-entry-search" role="search">
+            <?php if ($status !== ''): ?>
+                <input type="hidden" name="status" value="<?= e($status) ?>">
+            <?php endif; ?>
+
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                 <input
                     type="search"
                     class="form-control"
                     id="busca"
                     name="busca"
-                    value="<?= e($filters['busca']) ?>"
-                    placeholder="Nome do item, código ou origem"
+                    value="<?= e($busca) ?>"
+                    placeholder="Pesquisar por item, código ou origem"
                     maxlength="180"
                 >
-            </div>
-            <div class="col-12 col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-outline-secondary flex-grow-1">Pesquisar</button>
                 <?php if ($hasFilters): ?>
                     <a href="<?= e(url('/admin/loja/estoque')) ?>" class="btn btn-outline-secondary">Limpar</a>
                 <?php endif; ?>
             </div>
-        </div>
-    </form>
-</div>
+        </form>
+    </div>
 
-<div class="loja-filter-pills" role="group" aria-label="Filtrar estoque por situação">
-    <?php foreach ($statusOptions as $value => $label): ?>
-        <?php
-        $query = array_filter([
-            'status' => $value,
-            'busca' => $filters['busca'],
-        ], static fn (string $item): bool => $item !== '');
-        $href = url('/admin/loja/estoque' . ($query === [] ? '' : '?' . http_build_query($query)));
-        ?>
-        <a
-            href="<?= e($href) ?>"
-            class="loja-filter-pill<?= $filters['status'] === $value ? ' active' : '' ?>"
-            <?= $filters['status'] === $value ? 'aria-current="page"' : '' ?>
-        >
-            <?= e($label) ?>
-        </a>
-    <?php endforeach; ?>
-</div>
+    <div class="loja-filter-pills loja-hide-on-compact loja-stock-filters" role="group" aria-label="Filtrar estoque por situação">
+        <?php foreach ($statusOptions as $value => $label): ?>
+            <a
+                href="<?= e($makeUrl(['status' => $value === '' ? null : $value])) ?>"
+                class="loja-filter-pill<?= $status === $value ? ' active' : '' ?>"
+                <?= $status === $value ? 'aria-current="page"' : '' ?>
+            >
+                <?= e($label) ?>
+            </a>
+        <?php endforeach; ?>
+    </div>
 
-<div class="loja-summary-grid loja-summary-grid-6">
-    <article class="loja-summary-card">
-        <span class="loja-summary-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
-        <div>
-            <span class="loja-summary-label">Itens cadastrados</span>
-            <strong class="loja-summary-value"><?= (int) ($resumo['total_itens'] ?? 0) ?></strong>
-        </div>
-    </article>
-    <article class="loja-summary-card">
-        <span class="loja-summary-icon"><i class="bi bi-boxes" aria-hidden="true"></i></span>
-        <div>
-            <span class="loja-summary-label">Unidades totais</span>
-            <strong class="loja-summary-value"><?= (int) ($resumo['total_unidades'] ?? 0) ?></strong>
-        </div>
-    </article>
-    <article class="loja-summary-card">
-        <span class="loja-summary-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
-        <div>
-            <span class="loja-summary-label">Disponíveis</span>
-            <strong class="loja-summary-value"><?= (int) ($resumo['unidades_disponivel'] ?? 0) ?></strong>
-        </div>
-    </article>
-    <article class="loja-summary-card">
-        <span class="loja-summary-icon"><i class="bi bi-truck" aria-hidden="true"></i></span>
-        <div>
-            <span class="loja-summary-label">Em transporte</span>
-            <strong class="loja-summary-value"><?= (int) ($resumo['unidades_em_transporte'] ?? 0) ?></strong>
-        </div>
-    </article>
-    <article class="loja-summary-card">
-        <span class="loja-summary-icon"><i class="bi bi-calendar2-check" aria-hidden="true"></i></span>
-        <div>
-            <span class="loja-summary-label">Em pré-venda</span>
-            <strong class="loja-summary-value"><?= (int) ($resumo['unidades_pre_venda'] ?? 0) ?></strong>
-        </div>
-    </article>
-    <article class="loja-summary-card">
-        <span class="loja-summary-icon"><i class="bi bi-calculator" aria-hidden="true"></i></span>
-        <div>
-            <span class="loja-summary-label">Custo real total</span>
-            <strong class="loja-summary-value"><?= e(format_money($resumo['valor_total_real'] ?? 0)) ?></strong>
-        </div>
-    </article>
 </div>
 
 <section class="panel-card mt-3">
@@ -152,10 +162,39 @@ $statusOptions = [
                         ?>
                         <tr>
                             <td>
-                                <strong class="d-block"><?= e((string) $item['nome']) ?></strong>
-                                <?php if (!empty($item['codigo'])): ?>
-                                    <span class="small text-muted">Código: <?= e((string) $item['codigo']) ?></span>
-                                <?php endif; ?>
+                                <div class="loja-item-cell">
+                                    <span class="loja-item-thumb">
+                                        <?php if (!empty($item['imagem_id'])): ?>
+                                            <img
+                                                src="<?= e((string) item_imagem_url((int) $item['imagem_id'])) ?>"
+                                                alt="<?= e((string) $item['nome']) ?>"
+                                                loading="lazy"
+                                            >
+                                        <?php else: ?>
+                                            <i class="bi bi-image" aria-hidden="true"></i>
+                                        <?php endif; ?>
+                                    </span>
+                                    <div class="loja-item-cell-info">
+                                        <strong class="d-block"><?= e((string) $item['nome']) ?></strong>
+                                        <?php if (!empty($item['codigo'])): ?>
+                                            <span class="small text-muted">Código: <?= e((string) $item['codigo']) ?></span>
+                                        <?php endif; ?>
+                                        <?php
+                                        $stockItemMeta = array_filter([
+                                            $item['categoria_nome'] ?? null,
+                                            $item['marca_nome'] ?? null,
+                                            $item['escala_nome'] ?? null,
+                                            !empty($item['ano_fabricacao']) ? 'Ano ' . $item['ano_fabricacao'] : null,
+                                        ]);
+                                        ?>
+                                        <?php if ($stockItemMeta !== []): ?>
+                                            <span class="small text-muted d-block"><?= e(implode(' · ', $stockItemMeta)) ?></span>
+                                        <?php endif; ?>
+                                        <?php if ((int) ($item['imagens_count'] ?? 0) > 0): ?>
+                                            <span class="small text-muted d-block"><?= (int) $item['imagens_count'] ?> foto(s)</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
                             <td>
                                 <a href="<?= e(url('/admin/loja/entradas/' . $entryId)) ?>">

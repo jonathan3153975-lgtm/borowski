@@ -231,7 +231,18 @@ if (!function_exists('format_datetime')) {
 if (!function_exists('format_money')) {
     function format_money(mixed $value): string
     {
-        return 'R$ ' . number_format((float) $value, 2, ',', '.');
+        return 'R$ ' . number_format((float) $value, 3, ',', '.');
+    }
+}
+
+if (!function_exists('format_money_input')) {
+    function format_money_input(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        return number_format((float) $value, 3, ',', '.');
     }
 }
 
@@ -263,6 +274,15 @@ if (!function_exists('loja_status_class')) {
             'pre_venda' => 'status-pill-pre',
             default => '',
         };
+    }
+}
+
+if (!function_exists('item_imagem_url')) {
+    function item_imagem_url(?int $imageId): ?string
+    {
+        return $imageId !== null && $imageId > 0
+            ? url('/admin/loja/itens/imagem/' . $imageId)
+            : null;
     }
 }
 

@@ -58,7 +58,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !verify_csrf($_POST['_to
 
 $router = new Router();
 
-foreach (['web', 'admin', 'loja'] as $routeFile) {
+foreach (['web', 'admin', 'loja', 'configuracoes'] as $routeFile) {
     $registerRoutes = require BASE_PATH . '/routes/' . $routeFile . '.php';
     $registerRoutes($router);
 }

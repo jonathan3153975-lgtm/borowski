@@ -598,3 +598,32 @@
         width: 100%;
     }
 }
+
+.admin-nav-toggle {
+    justify-content: flex-start;
+}
+
+.admin-nav-toggle .bi-chevron-down {
+    transition: transform 0.2s ease;
+}
+
+.admin-nav-toggle[aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+.admin-nav-collapse {
+    margin: 0.1rem 0 0.4rem;
+}
+
+.admin-nav-sublink {
+    padding-left: 2.6rem;
+    font-size: 0.86rem;
+}
+
+.admin-nav-sublink + .admin-nav-sublink {
+    margin-top: 0.2rem;
+}
+
+.admin-shell--collapsed .admin-nav-collapse {
+    display: none !important;
+}

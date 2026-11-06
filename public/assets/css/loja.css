@@ -104,6 +104,26 @@
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.loja-stock-summary-wrap {
+    display: grid;
+    grid-template-rows: 1fr;
+    margin-bottom: 0.85rem;
+    opacity: 1;
+    transition: grid-template-rows 0.25s ease, margin-bottom 0.25s ease, opacity 0.2s ease;
+}
+
+.loja-stock-summary-wrap > .loja-summary-grid {
+    min-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+}
+
+.loja-sticky-top.is-compact .loja-stock-summary-wrap {
+    grid-template-rows: 0fr;
+    margin-bottom: 0;
+    opacity: 0;
+}
+
 .loja-summary-card {
     display: flex;
     align-items: center;
@@ -519,5 +539,300 @@
     .loja-pagination {
         justify-content: center;
         text-align: center;
+    }
+}
+
+.loja-sticky-top {
+    position: sticky;
+    top: 72px;
+    z-index: 12;
+    background-color: var(--color-bg);
+    padding: 0.75rem 0 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 6px 14px rgba(16, 29, 53, 0.04);
+}
+
+.loja-entry-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.loja-entry-search {
+    flex: 1 1 520px;
+    min-width: 240px;
+}
+
+.loja-entry-search .input-group-text {
+    background-color: var(--color-surface);
+    color: var(--color-text-muted);
+}
+
+.loja-entry-new {
+    flex: 0 0 auto;
+}
+
+.loja-entry-filters {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.loja-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.loja-filter-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.loja-filter-pill.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.loja-entries-list {
+    margin-top: 1rem;
+}
+
+.loja-sticky-top.is-compact .loja-hide-on-compact {
+    display: none;
+}
+
+.loja-sticky-top.is-compact .loja-entry-toolbar {
+    margin-bottom: 0;
+}
+
+.loja-sticky-top.is-compact .loja-entry-search {
+    flex: 1 1 100%;
+    max-width: none;
+}
+
+.modal-subtitle {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+}
+
+.loja-entry-cards {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+}
+
+.loja-entry-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.loja-entry-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.loja-entry-card-info {
+    min-width: 0;
+}
+
+.loja-entry-card-title {
+    display: block;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.loja-entry-card-date {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.loja-entry-card-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.loja-entry-card-tracking {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+}
+
+.loja-entry-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0.7rem;
+    background-color: var(--color-bg);
+    border-radius: var(--radius-sm);
+}
+
+.loja-entry-card-stats div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.loja-entry-card-stats span {
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+}
+
+.loja-entry-card-stats strong {
+    font-size: 0.85rem;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.loja-entry-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.loja-entry-card-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.loja-item-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.loja-item-cell-info {
+    min-width: 0;
+}
+
+.loja-item-thumb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg);
+    color: var(--color-text-muted);
+    overflow: hidden;
+}
+
+.loja-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.loja-item-card-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.loja-item-modal-form {
+    background-color: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.loja-item-modal-form .modal-subtitle {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+}
+
+.loja-item-modal-form .loja-form-divider {
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 991.98px) {
+    .loja-sticky-top {
+        top: 64px;
+        padding: 0.5rem 0;
+    }
+
+    .loja-entry-toolbar {
+        gap: 0.5rem;
+    }
+
+    .loja-entry-search {
+        flex: 1 1 100%;
+    }
+
+    .loja-entry-new {
+        width: 100%;
+    }
+
+    .loja-entry-filters {
+        gap: 1rem;
+    }
+
+    .loja-entry-actions .btn,
+    .loja-entry-add-item {
+        font-size: 0;
+        gap: 0;
+        justify-content: center;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .loja-entry-actions .btn i,
+    .loja-entry-add-item i {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .loja-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .loja-entry-card-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .loja-entry-card-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .loja-entry-card-actions .btn,
+    .loja-entry-card-actions form {
+        width: 100%;
+    }
+
+    .loja-entry-card-actions form .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .loja-stock-summary {
+        grid-template-columns: 1fr;
     }
 }
