@@ -284,3 +284,26 @@ h6 {
     height: 100%;
     object-fit: contain;
 }
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #c3ccdb transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #c3ccdb;
+    border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #a9b4c6;
+}

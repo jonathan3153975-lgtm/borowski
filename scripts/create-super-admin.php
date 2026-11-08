@@ -41,7 +41,7 @@ function promptHidden(string $label): string
 
 function promptHiddenWindows(string $label): string
 {
-    $script = "$secure = Read-Host -AsSecureString -Prompt '" . addslashes($label) . "'\n"
+    $script = "\$secure = Read-Host -AsSecureString -Prompt '" . addslashes($label) . "'\n"
         . '$bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)' . "\n"
         . '[System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) | Write-Output';
 

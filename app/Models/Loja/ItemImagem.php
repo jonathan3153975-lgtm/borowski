@@ -22,6 +22,45 @@ class ItemImagem extends Model
         return $statement->fetchAll();
     }
 
+    /**
+     * Imagens de varios itens de uma vez, agrupadas por item_id.
+     */
+    public function listByItems(array $itemIds): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $itemIds),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+
+        foreach ($ids as $index => $id) {
+            $key = ':item_' . $index;
+            $placeholders[] = $key;
+            $params[$key] = $id;
+        }
+
+        $statement = $this->db->prepare(
+            'SELECT * FROM loja_item_imagens
+             WHERE item_id IN (' . implode(', ', $placeholders) . ')
+             ORDER BY imagem_principal DESC, ordem_exibicao ASC, id ASC'
+        );
+        $statement->execute($params);
+
+        $map = [];
+
+        foreach ($statement->fetchAll() as $row) {
+            $map[(int) $row['item_id']][] = $row;
+        }
+
+        return $map;
+    }
+
     public function listByEntrada(int $entradaId): array
     {
         $statement = $this->db->prepare(

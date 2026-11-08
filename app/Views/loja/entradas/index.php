@@ -47,6 +47,7 @@ $makeUrl = static function (array $overrides = []) use ($baseQuery): string {
                     value="<?= e($busca) ?>"
                     placeholder="Pesquisar por descrição, link ou rastreio"
                     maxlength="180"
+                    data-live-filter
                 >
                 <?php if ($busca !== ''): ?>
                     <a href="<?= e($makeUrl(['busca' => null])) ?>" class="btn btn-outline-secondary">
@@ -55,6 +56,16 @@ $makeUrl = static function (array $overrides = []) use ($baseQuery): string {
                 <?php endif; ?>
             </div>
         </form>
+
+        <button
+            type="button"
+            class="btn btn-outline-secondary loja-compact-toggle d-lg-none"
+            data-loja-compact-toggle
+            aria-expanded="false"
+            aria-label="Mostrar opções"
+        >
+            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+        </button>
 
         <button
             type="button"
@@ -81,11 +92,6 @@ $makeUrl = static function (array $overrides = []) use ($baseQuery): string {
                     class="loja-filter-pill<?= $modo === 'direta' ? ' active' : '' ?>"
                     <?= $modo === 'direta' ? 'aria-current="page"' : '' ?>
                 >Compra direta</a>
-                <a
-                    href="<?= e($makeUrl(['modo' => 'previsao', 'recebido' => null])) ?>"
-                    class="loja-filter-pill<?= $modo === 'previsao' ? ' active' : '' ?>"
-                    <?= $modo === 'previsao' ? 'aria-current="page"' : '' ?>
-                >Previsão</a>
             </div>
         </div>
 
@@ -183,7 +189,7 @@ $makeUrl = static function (array $overrides = []) use ($baseQuery): string {
                 <tbody>
                     <?php foreach ($items as $item): ?>
                         <?php $entryId = (int) $item['id']; ?>
-                        <tr>
+                        <tr data-filter-row>
                             <td>
                                 <a href="<?= e(url('/admin/loja/entradas/' . $entryId)) ?>" class="loja-entry-link">
                                     <strong><?= e((string) $item['descricao_origem']) ?></strong>
@@ -234,7 +240,7 @@ $makeUrl = static function (array $overrides = []) use ($baseQuery): string {
         <div class="d-lg-none loja-entry-cards">
             <?php foreach ($items as $item): ?>
                 <?php $entryId = (int) $item['id']; ?>
-                <article class="loja-entry-card">
+                <article class="loja-entry-card" data-filter-row>
                     <div class="loja-entry-card-top">
                         <div class="loja-entry-card-info">
                             <a href="<?= e(url('/admin/loja/entradas/' . $entryId)) ?>" class="loja-entry-card-title">

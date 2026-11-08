@@ -53,7 +53,7 @@ class ItemEstoque extends Model
                 fab.nome AS fabricante_nome, col.nome AS colecao_nome,
                 esc.nome AS escala_nome
              FROM loja_itens i
-             INNER JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN loja_entradas e ON e.id = i.entrada_id
              LEFT JOIN categorias cat ON cat.id = i.categoria_id
              LEFT JOIN marcas mar ON mar.id = i.marca_id
              LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
@@ -67,6 +67,107 @@ class ItemEstoque extends Model
         $record = $statement->fetch();
 
         return $record === false ? null : $record;
+    }
+
+    /**
+     * Itens disponiveis em estoque que ainda nao foram publicados no canal informado.
+     */
+    public function listarPublicaveis(int $canalId): array
+    {
+        $statement = $this->db->prepare(
+            "SELECT i.*, e.descricao_origem AS entrada_descricao, e.modo AS entrada_modo,
+                cat.nome AS categoria_nome, mar.nome AS marca_nome, fab.nome AS fabricante_nome,
+                col.nome AS colecao_nome, esc.nome AS escala_nome,
+                (SELECT li.id FROM loja_item_imagens li
+                    WHERE li.item_id = i.id
+                    ORDER BY li.imagem_principal DESC, li.ordem_exibicao ASC, li.id ASC
+                    LIMIT 1) AS imagem_id,
+                (SELECT COUNT(*) FROM loja_item_imagens li
+                    WHERE li.item_id = i.id) AS imagens_count
+             FROM loja_itens i
+             LEFT JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN categorias cat ON cat.id = i.categoria_id
+             LEFT JOIN marcas mar ON mar.id = i.marca_id
+             LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
+             LEFT JOIN colecoes col ON col.id = i.colecao_id
+             LEFT JOIN escalas esc ON esc.id = i.escala_id
+             WHERE i.status = 'disponivel'
+               AND NOT EXISTS (
+                   SELECT 1 FROM loja_itens_publicados p
+                   WHERE p.item_id = i.id AND p.canal_id = :canal_id AND p.status <> 'encerrado'
+               )
+               AND " . $this->availabilityCondition() . "
+             ORDER BY i.nome ASC"
+        );
+        $statement->execute(['canal_id' => $canalId]);
+
+        return $statement->fetchAll();
+    }
+
+    /**
+     * Todos os itens disponiveis (base para publicacao em qualquer canal).
+     */
+    public function listarDisponiveis(): array
+    {
+        $statement = $this->db->query(
+            "SELECT i.*, e.descricao_origem AS entrada_descricao, e.modo AS entrada_modo,
+                cat.nome AS categoria_nome, mar.nome AS marca_nome, fab.nome AS fabricante_nome,
+                col.nome AS colecao_nome, esc.nome AS escala_nome,
+                (SELECT li.id FROM loja_item_imagens li
+                    WHERE li.item_id = i.id
+                    ORDER BY li.imagem_principal DESC, li.ordem_exibicao ASC, li.id ASC
+                    LIMIT 1) AS imagem_id,
+                (SELECT COUNT(*) FROM loja_item_imagens li
+                    WHERE li.item_id = i.id) AS imagens_count,
+                (SELECT COALESCE(SUM(r.quantidade), 0) FROM loja_reservas r
+                    WHERE r.item_id = i.id
+                      AND (r.status = 'confirmada'
+                        OR (r.status = 'reservada' AND r.expira_em > NOW()))) AS comprometido
+             FROM loja_itens i
+             LEFT JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN categorias cat ON cat.id = i.categoria_id
+             LEFT JOIN marcas mar ON mar.id = i.marca_id
+             LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
+             LEFT JOIN colecoes col ON col.id = i.colecao_id
+             LEFT JOIN escalas esc ON esc.id = i.escala_id
+             WHERE i.status IN ('disponivel', 'pre_venda')
+               AND " . $this->availabilityCondition() . "
+             ORDER BY i.nome ASC"
+        );
+
+        return $statement->fetchAll();
+    }
+
+    /**
+     * Itens com unidades disponiveis para venda direta (presencial).
+     */
+    public function listarParaVendaDireta(): array
+    {
+        $statement = $this->db->query(
+            "SELECT i.*,
+                (SELECT li.id FROM loja_item_imagens li
+                    WHERE li.item_id = i.id
+                    ORDER BY li.imagem_principal DESC, li.ordem_exibicao ASC, li.id ASC
+                    LIMIT 1) AS imagem_id,
+                (SELECT p.preco_venda FROM loja_itens_publicados p
+                    INNER JOIN loja_canais c ON c.id = p.canal_id
+                    WHERE p.item_id = i.id AND p.status = 'publicado'
+                    ORDER BY (c.slug = 'loja') DESC, p.id DESC
+                    LIMIT 1) AS preco_sugerido,
+                (i.quantidade - COALESCE((SELECT SUM(r.quantidade) FROM loja_reservas r
+                    WHERE r.item_id = i.id
+                      AND (r.status = 'confirmada'
+                        OR (r.status = 'reservada' AND r.expira_em > NOW()))), 0)) AS disponivel
+             FROM loja_itens i
+             WHERE i.status IN ('disponivel', 'pre_venda')
+               AND i.quantidade > COALESCE((SELECT SUM(r.quantidade) FROM loja_reservas r
+                    WHERE r.item_id = i.id
+                      AND (r.status = 'confirmada'
+                        OR (r.status = 'reservada' AND r.expira_em > NOW()))), 0)
+             ORDER BY i.nome ASC"
+        );
+
+        return $statement === false ? [] : $statement->fetchAll();
     }
 
     public function create(array $data): int
@@ -191,7 +292,7 @@ class ItemEstoque extends Model
                 (SELECT MIN(f.preco_custo) FROM loja_item_fornecedores f
                     WHERE f.item_id = i.id) AS menor_oferta
              FROM loja_itens i
-             INNER JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN loja_entradas e ON e.id = i.entrada_id
              LEFT JOIN categorias cat ON cat.id = i.categoria_id
              LEFT JOIN marcas mar ON mar.id = i.marca_id
              LEFT JOIN fabricantes fab ON fab.id = i.fabricante_id
@@ -219,7 +320,7 @@ class ItemEstoque extends Model
 
         $statement = $this->db->prepare(
             "SELECT COUNT(*) FROM loja_itens i
-             INNER JOIN loja_entradas e ON e.id = i.entrada_id
+             LEFT JOIN loja_entradas e ON e.id = i.entrada_id
              WHERE {$where}"
         );
 
@@ -247,16 +348,32 @@ class ItemEstoque extends Model
         return $record === false ? [] : $record;
     }
 
+    private function availabilityCondition(): string
+    {
+        return "(i.quantidade - COALESCE((SELECT SUM(r.quantidade) FROM loja_reservas r"
+            . " WHERE r.item_id = i.id AND (r.status = 'confirmada'"
+            . " OR (r.status = 'reservada' AND r.expira_em > NOW()))), 0)) > 0";
+    }
+
     private function buildFilters(array $filters): array
     {
         $conditions = ['1 = 1'];
         $params = [];
+        $conditions[] = $this->availabilityCondition();
 
         $status = (string) ($filters['status'] ?? '');
 
         if (in_array($status, ['disponivel', 'em_transporte', 'pre_venda'], true)) {
             $conditions[] = 'i.status = :status';
             $params[':status'] = $status;
+        }
+
+        $publicacao = (string) ($filters['publicacao'] ?? '');
+
+        if ($publicacao === 'publicado') {
+            $conditions[] = "EXISTS (SELECT 1 FROM loja_itens_publicados p WHERE p.item_id = i.id AND p.status <> 'encerrado')";
+        } elseif ($publicacao === 'nao_publicado') {
+            $conditions[] = "NOT EXISTS (SELECT 1 FROM loja_itens_publicados p WHERE p.item_id = i.id AND p.status <> 'encerrado')";
         }
 
         $busca = trim((string) ($filters['busca'] ?? ''));

@@ -746,7 +746,7 @@ $renderConfigOptions = static function (array $items, int $selected): void {
                     $ofPreco = $ofertaIsOld ? old('preco_custo', '') : '';
                     $ofObservacoes = $ofertaIsOld ? old('oferta_observacoes', '') : '';
                     ?>
-                    <article class="loja-item-card">
+                    <article class="loja-item-card" id="item-<?= (int) $item['id'] ?>">
                         <header class="loja-item-card-head">
                             <div class="loja-item-card-main">
                                 <span class="loja-item-thumb">

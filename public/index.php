@@ -50,7 +50,11 @@ ini_set('session.use_strict_mode', '1');
 ini_set('session.use_only_cookies', '1');
 session_start();
 
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !verify_csrf($_POST['_token'] ?? null)) {
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$isWebhook = str_starts_with($requestPath, '/telegram/webhook/')
+    || str_starts_with($requestPath, '/mercadopago/webhook');
+
+if (!$isWebhook && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !verify_csrf($_POST['_token'] ?? null)) {
     http_response_code(419);
     echo View::render('errors/419', [], null);
     exit;

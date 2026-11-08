@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Controllers\Loja\EntradaController;
 use App\Controllers\Loja\EstoqueController;
 use App\Controllers\Loja\ItemImagemController;
+use App\Controllers\Loja\PublicadoController;
 use App\Core\Router;
 use App\Middleware\AuthMiddleware;
 
@@ -30,6 +31,14 @@ return static function (Router $router): void {
     $router->post('/admin/loja/itens/{itemId}/fornecedores', [EntradaController::class, 'addOffer'], $auth);
     $router->post('/admin/loja/itens/{itemId}/fornecedores/{ofertaId}/selecionar', [EntradaController::class, 'selectOffer'], $auth);
     $router->post('/admin/loja/itens/{itemId}/fornecedores/{ofertaId}/excluir', [EntradaController::class, 'deleteOffer'], $auth);
+
+    $router->get('/admin/loja/estoque/publicados', [PublicadoController::class, 'index'], $auth);
+    $router->post('/admin/loja/estoque/publicados', [PublicadoController::class, 'store'], $auth);
+    $router->post('/admin/loja/estoque/publicados/{itemId}/publicar/telegram', [PublicadoController::class, 'publicarTelegram'], $auth);
+    $router->post('/admin/loja/estoque/publicados/{itemId}/publicar/loja', [PublicadoController::class, 'publicarLoja'], $auth);
+    $router->post('/admin/loja/estoque/publicados/{id}/excluir', [PublicadoController::class, 'destroy'], $auth);
+
+    $router->post('/admin/loja/estoque/demanda', [EstoqueController::class, 'storeDemanda'], $auth);
 
     $router->get('/admin/loja/estoque', [EstoqueController::class, 'index'], $auth);
 };

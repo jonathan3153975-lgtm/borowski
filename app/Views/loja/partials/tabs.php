@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 $activeTab = $activeTab ?? 'entradas';
 ?>
-<nav class="loja-tabs loja-hide-on-compact" aria-label="Seções do módulo Loja">
+<nav class="loja-tabs" aria-label="Seções do módulo Loja">
     <ul class="nav nav-pills">
         <li class="nav-item">
             <a
@@ -24,6 +24,16 @@ $activeTab = $activeTab ?? 'entradas';
             >
                 <i class="bi bi-boxes" aria-hidden="true"></i>
                 Estoque
+            </a>
+        </li>
+        <li class="nav-item">
+            <a
+                class="nav-link<?= $activeTab === 'publicados' ? ' active' : '' ?>"
+                href="<?= e(url('/admin/loja/estoque/publicados')) ?>"
+                <?= $activeTab === 'publicados' ? 'aria-current="page"' : '' ?>
+            >
+                <i class="bi bi-megaphone" aria-hidden="true"></i>
+                Publicados
             </a>
         </li>
     </ul>

@@ -12,6 +12,11 @@ $dashboardActive = $current === '/admin';
 $usersActive = str_starts_with($current, '/admin/usuarios');
 $lojaEntradasActive = $current === '/admin/loja' || str_starts_with($current, '/admin/loja/entradas');
 $lojaEstoqueActive = str_starts_with($current, '/admin/loja/estoque');
+$pedidosActive = str_starts_with($current, '/admin/pedidos');
+$vendaDiretaActive = str_starts_with($current, '/admin/vendas/direta');
+$vendasActive = str_starts_with($current, '/admin/vendas') && !$vendaDiretaActive;
+$caixaActive = str_starts_with($current, '/admin/caixa');
+$entregasActive = str_starts_with($current, '/admin/entregas');
 $configActive = str_starts_with($current, '/admin/configuracoes');
 $configMenu = \App\Services\ConfiguracaoService::MAP;
 $extraStyles = $extraStyles ?? [];
@@ -62,8 +67,59 @@ $info = flash('info');
                     <i class="bi bi-speedometer2" aria-hidden="true"></i>
                     <span class="nav-label">Dashboard</span>
                 </a>
+                <a
+                    href="<?= e(url('/admin/vendas/direta')) ?>"
+                    class="admin-nav-link<?= $vendaDiretaActive ? ' active' : '' ?>"
+                    <?= $vendaDiretaActive ? 'aria-current="page"' : '' ?>
+                >
+                    <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+                    <span class="nav-label">Venda direta</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/caixa')) ?>"
+                    class="admin-nav-link<?= $caixaActive ? ' active' : '' ?>"
+                    <?= $caixaActive ? 'aria-current="page"' : '' ?>
+                >
+                    <i class="bi bi-safe" aria-hidden="true"></i>
+                    <span class="nav-label">Caixa</span>
+                </a>
+
+                <span class="admin-nav-label nav-label">Loja</span>
+                <a
+                    href="<?= e(url('/admin/loja/estoque')) ?>"
+                    class="admin-nav-link<?= $lojaEstoqueActive || $lojaEntradasActive ? ' active' : '' ?>"
+                    <?= ($lojaEstoqueActive || $lojaEntradasActive) ? 'aria-current="page"' : '' ?>
+                >
+                    <i class="bi bi-boxes" aria-hidden="true"></i>
+                    <span class="nav-label">Estoque</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/pedidos')) ?>"
+                    class="admin-nav-link<?= $pedidosActive ? ' active' : '' ?>"
+                    <?= $pedidosActive ? 'aria-current="page"' : '' ?>
+                >
+                    <i class="bi bi-receipt" aria-hidden="true"></i>
+                    <span class="nav-label">Pedidos</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/vendas')) ?>"
+                    class="admin-nav-link<?= $vendasActive ? ' active' : '' ?>"
+                    <?= $vendasActive ? 'aria-current="page"' : '' ?>
+                >
+                    <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                    <span class="nav-label">Vendas</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/entregas')) ?>"
+                    class="admin-nav-link<?= $entregasActive ? ' active' : '' ?>"
+                    <?= $entregasActive ? 'aria-current="page"' : '' ?>
+                >
+                    <i class="bi bi-truck" aria-hidden="true"></i>
+                    <span class="nav-label">Entregas</span>
+                </a>
 
                 <?php if ($isSuper): ?>
+                    <span class="admin-nav-label nav-label">Sistema</span>
                     <a
                         href="<?= e(url('/admin/usuarios')) ?>"
                         class="admin-nav-link<?= $usersActive ? ' active' : '' ?>"
@@ -73,24 +129,6 @@ $info = flash('info');
                         <span class="nav-label">Administradores</span>
                     </a>
                 <?php endif; ?>
-
-                <span class="admin-nav-label nav-label">Loja</span>
-                <a
-                    href="<?= e(url('/admin/loja/entradas')) ?>"
-                    class="admin-nav-link<?= $lojaEntradasActive ? ' active' : '' ?>"
-                    <?= $lojaEntradasActive ? 'aria-current="page"' : '' ?>
-                >
-                    <i class="bi bi-box-seam" aria-hidden="true"></i>
-                    <span class="nav-label">Entrada de produtos</span>
-                </a>
-                <a
-                    href="<?= e(url('/admin/loja/estoque')) ?>"
-                    class="admin-nav-link<?= $lojaEstoqueActive ? ' active' : '' ?>"
-                    <?= $lojaEstoqueActive ? 'aria-current="page"' : '' ?>
-                >
-                    <i class="bi bi-boxes" aria-hidden="true"></i>
-                    <span class="nav-label">Estoque</span>
-                </a>
 
                 <span class="admin-nav-label nav-label">Configurações</span>
                 <button
@@ -117,6 +155,24 @@ $info = flash('info');
                             <span class="nav-label"><?= e($configItem['plural']) ?></span>
                         </a>
                     <?php endforeach; ?>
+                    <?php $telegramActive = str_starts_with($current, '/admin/configuracoes/telegram'); ?>
+                    <a
+                        href="<?= e(url('/admin/configuracoes/telegram')) ?>"
+                        class="admin-nav-link admin-nav-sublink<?= $telegramActive ? ' active' : '' ?>"
+                        <?= $telegramActive ? 'aria-current="page"' : '' ?>
+                    >
+                        <i class="bi bi-telegram" aria-hidden="true"></i>
+                        <span class="nav-label">Telegram</span>
+                    </a>
+                    <?php $mpActive = str_starts_with($current, '/admin/configuracoes/mercadopago'); ?>
+                    <a
+                        href="<?= e(url('/admin/configuracoes/mercadopago')) ?>"
+                        class="admin-nav-link admin-nav-sublink<?= $mpActive ? ' active' : '' ?>"
+                        <?= $mpActive ? 'aria-current="page"' : '' ?>
+                    >
+                        <i class="bi bi-credit-card" aria-hidden="true"></i>
+                        <span class="nav-label">Mercado Pago</span>
+                    </a>
                 </div>
             </nav>
 
@@ -240,8 +296,52 @@ $info = flash('info');
                     <i class="bi bi-speedometer2" aria-hidden="true"></i>
                     <span>Dashboard</span>
                 </a>
+                <a
+                    href="<?= e(url('/admin/vendas/direta')) ?>"
+                    class="admin-nav-link<?= $vendaDiretaActive ? ' active' : '' ?>"
+                >
+                    <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+                    <span>Venda direta</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/caixa')) ?>"
+                    class="admin-nav-link<?= $caixaActive ? ' active' : '' ?>"
+                >
+                    <i class="bi bi-safe" aria-hidden="true"></i>
+                    <span>Caixa</span>
+                </a>
+
+                <a
+                    href="<?= e(url('/admin/loja/estoque')) ?>"
+                    class="admin-nav-link<?= ($lojaEstoqueActive || $lojaEntradasActive) ? ' active' : '' ?>"
+                >
+                    <i class="bi bi-boxes" aria-hidden="true"></i>
+                    <span>Estoque</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/pedidos')) ?>"
+                    class="admin-nav-link<?= $pedidosActive ? ' active' : '' ?>"
+                >
+                    <i class="bi bi-receipt" aria-hidden="true"></i>
+                    <span>Pedidos</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/vendas')) ?>"
+                    class="admin-nav-link<?= $vendasActive ? ' active' : '' ?>"
+                >
+                    <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                    <span>Vendas</span>
+                </a>
+                <a
+                    href="<?= e(url('/admin/entregas')) ?>"
+                    class="admin-nav-link<?= $entregasActive ? ' active' : '' ?>"
+                >
+                    <i class="bi bi-truck" aria-hidden="true"></i>
+                    <span>Entregas</span>
+                </a>
 
                 <?php if ($isSuper): ?>
+                    <span class="admin-nav-label">Sistema</span>
                     <a
                         href="<?= e(url('/admin/usuarios')) ?>"
                         class="admin-nav-link<?= $usersActive ? ' active' : '' ?>"
@@ -250,21 +350,6 @@ $info = flash('info');
                         <span>Administradores</span>
                     </a>
                 <?php endif; ?>
-
-                <a
-                    href="<?= e(url('/admin/loja/entradas')) ?>"
-                    class="admin-nav-link<?= $lojaEntradasActive ? ' active' : '' ?>"
-                >
-                    <i class="bi bi-box-seam" aria-hidden="true"></i>
-                    <span>Entrada de produtos</span>
-                </a>
-                <a
-                    href="<?= e(url('/admin/loja/estoque')) ?>"
-                    class="admin-nav-link<?= $lojaEstoqueActive ? ' active' : '' ?>"
-                >
-                    <i class="bi bi-boxes" aria-hidden="true"></i>
-                    <span>Estoque</span>
-                </a>
 
                 <span class="admin-nav-label">Configurações</span>
                 <button
@@ -290,6 +375,22 @@ $info = flash('info');
                             <span><?= e($configItem['plural']) ?></span>
                         </a>
                     <?php endforeach; ?>
+                    <?php $telegramActive = str_starts_with($current, '/admin/configuracoes/telegram'); ?>
+                    <a
+                        href="<?= e(url('/admin/configuracoes/telegram')) ?>"
+                        class="admin-nav-link admin-nav-sublink<?= $telegramActive ? ' active' : '' ?>"
+                    >
+                        <i class="bi bi-telegram" aria-hidden="true"></i>
+                        <span>Telegram</span>
+                    </a>
+                    <?php $mpActive = str_starts_with($current, '/admin/configuracoes/mercadopago'); ?>
+                    <a
+                        href="<?= e(url('/admin/configuracoes/mercadopago')) ?>"
+                        class="admin-nav-link admin-nav-sublink<?= $mpActive ? ' active' : '' ?>"
+                    >
+                        <i class="bi bi-credit-card" aria-hidden="true"></i>
+                        <span>Mercado Pago</span>
+                    </a>
                 </div>
             </nav>
 

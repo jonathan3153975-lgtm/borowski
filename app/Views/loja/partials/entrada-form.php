@@ -2,60 +2,16 @@
 
 declare(strict_types=1);
 
-$modo = (string) old('modo', 'direta');
-$isDireta = $modo !== 'previsao';
 $recebidoMarcado = old('recebido') === '1' || old('recebido') === 'on';
 ?>
 <form method="post" action="<?= e(url('/admin/loja/entradas')) ?>" class="loja-form">
     <?= csrf_field() ?>
     <input type="hidden" name="form_context" value="entry_create">
+    <input type="hidden" name="modo" value="direta">
 
-    <fieldset class="loja-mode-selector">
-        <legend class="form-label">Modo de entrada</legend>
-        <div class="loja-mode-options">
-            <label class="loja-mode-option">
-                <input
-                    type="radio"
-                    name="modo"
-                    value="direta"
-                    data-entry-mode
-                    <?= $isDireta ? 'checked' : '' ?>
-                >
-                <span class="loja-mode-option-body">
-                    <span class="loja-mode-option-title">
-                        <i class="bi bi-bag-check" aria-hidden="true"></i>
-                        Compra direta
-                    </span>
-                    <span class="loja-mode-option-text">
-                        Compra já realizada, com link, recebimento, rastreio e custos adicionais.
-                    </span>
-                </span>
-            </label>
-
-            <label class="loja-mode-option">
-                <input
-                    type="radio"
-                    name="modo"
-                    value="previsao"
-                    data-entry-mode
-                    <?= !$isDireta ? 'checked' : '' ?>
-                >
-                <span class="loja-mode-option-body">
-                    <span class="loja-mode-option-title">
-                        <i class="bi bi-calendar2-check" aria-hidden="true"></i>
-                        Previsão de compra
-                    </span>
-                    <span class="loja-mode-option-text">
-                        Itens para pré-venda, cadastrados depois com múltiplos fornecedores.
-                    </span>
-                </span>
-            </label>
-        </div>
-    </fieldset>
-
-    <div class="row g-3 mt-1">
+    <div class="row g-3">
         <div class="col-12">
-            <label for="descricao_origem" class="form-label">Descrição de origem / previsão</label>
+            <label for="descricao_origem" class="form-label">Descrição de origem</label>
             <input
                 type="text"
                 class="form-control"
@@ -69,7 +25,7 @@ $recebidoMarcado = old('recebido') === '1' || old('recebido') === 'on';
             >
         </div>
 
-        <div class="col-12 col-md-8 js-direct-field" data-direct-field>
+        <div class="col-12 col-md-8">
             <label for="link_compra" class="form-label">Link de compra</label>
             <input
                 type="url"
@@ -82,7 +38,7 @@ $recebidoMarcado = old('recebido') === '1' || old('recebido') === 'on';
             >
         </div>
 
-        <div class="col-12 col-md-4 js-direct-field" data-direct-field>
+        <div class="col-12 col-md-4">
             <label for="codigo_rastreio" class="form-label">Código de rastreio (opcional)</label>
             <input
                 type="text"
@@ -95,7 +51,7 @@ $recebidoMarcado = old('recebido') === '1' || old('recebido') === 'on';
             >
         </div>
 
-        <div class="col-12 js-direct-field" data-direct-field>
+        <div class="col-12">
             <div class="form-check loja-check">
                 <input
                     type="checkbox"
@@ -108,7 +64,7 @@ $recebidoMarcado = old('recebido') === '1' || old('recebido') === 'on';
                 <label class="form-check-label" for="recebido">
                     A mercadoria já foi recebida
                 </label>
-                <div class="form-text">Se não for marcado, os itens entrarão como “Em transporte”.</div>
+                <div class="form-text">Se não for marcado, os itens entrarão como "Em transporte".</div>
             </div>
         </div>
 

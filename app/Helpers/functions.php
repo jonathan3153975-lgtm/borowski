@@ -68,7 +68,15 @@ if (!function_exists('url')) {
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        return url('assets/' . ltrim($path, '/'));
+        $relative = 'assets/' . ltrim($path, '/');
+        $assetUrl = url($relative);
+        $file = BASE_PATH . '/public/' . $relative;
+
+        if (is_file($file)) {
+            $assetUrl .= '?v=' . filemtime($file);
+        }
+
+        return $assetUrl;
     }
 }
 

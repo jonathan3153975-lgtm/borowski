@@ -24,3 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
         window.localStorage.setItem(storageKey, collapsed ? '1' : '0');
     });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-use-chat]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById('telegram_group_chat_id');
+
+            if (input) {
+                input.value = button.getAttribute('data-use-chat') || '';
+                input.focus();
+            }
+        });
+    });
+});
